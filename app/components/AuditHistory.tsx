@@ -40,6 +40,7 @@ const ACTIONS = [
   ["TOKEN_IMPRESSAO_GERADO", "Token de impressão gerado"],
   ["DONO_CRIADO", "Acesso do dono criado"],
   ["DONO_RECONCILIADO", "Acesso do dono vinculado"],
+  ["DONO_RECONFIGURADO", "Acesso do dono protegido e atualizado"],
   ["SENHA_DONO_REDEFINIDA", "Senha do dono redefinida"],
 ] as const;
 
