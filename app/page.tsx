@@ -16,6 +16,7 @@ import {
   KeyRound,
   LoaderCircle,
   LogOut,
+  Pencil,
   Plus,
   RefreshCw,
   Search,
@@ -39,6 +40,7 @@ type Establishment = {
   id: string;
   nome: string;
   slug: string;
+  documento: string | null;
   email: string | null;
   telefone: string | null;
   status: Status;
@@ -109,6 +111,7 @@ export default function DashboardPage() {
   const [announcement, setAnnouncement] = useState("");
   const [provisioning, setProvisioning] = useState("");
   const [billingFor, setBillingFor] = useState<Establishment | null>(null);
+  const [editingFor, setEditingFor] = useState<Establishment | null>(null);
   const [printerToken, setPrinterToken] = useState<{ id: string; value: string } | null>(null);
   const [search, setSearch] = useState("");
 
@@ -323,6 +326,35 @@ export default function DashboardPage() {
     }
   }
 
+  async function updateEstablishment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editingFor) return;
+    setSaving(true);
+    setError("");
+    const form = new FormData(event.currentTarget);
+    const databaseUrl = String(form.get("databaseUrl") || "").trim();
+    try {
+      await api(`/estabelecimentos/${editingFor.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          nome: form.get("nome"),
+          slug: form.get("slug"),
+          documento: form.get("documento") || null,
+          email: form.get("email") || null,
+          telefone: form.get("telefone") || null,
+          ...(databaseUrl ? { databaseUrl } : {}),
+        }),
+      });
+      setEditingFor(null);
+      setAnnouncement(`Cadastro de ${editingFor.nome} atualizado.`);
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Falha ao atualizar o estabelecimento");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function generatePrinterToken(item: Establishment) {
     setError("");
     try {
@@ -496,6 +528,9 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="client-actions">
+                      <button onClick={() => { setEditingFor((current) => current?.id === item.id ? null : item); setBillingFor(null); setOwnerFor(null); }}>
+                        <Pencil size={20} /><span>Editar</span>
+                      </button>
                       <button onClick={() => void provisionDatabase(item)} disabled={provisioning === item.id} title="Aplicar atualizações no banco">
                         {provisioning === item.id ? <LoaderCircle size={20} className="animate-spin" /> : <Database size={20} />}
                         <span>{item.bancoPronto ? "Atualizar banco" : "Preparar banco"}</span>
@@ -513,6 +548,27 @@ export default function DashboardPage() {
                         <KeyRound size={19} /><span>Acesso</span><ArrowRight size={16} aria-hidden />
                       </button>
                     </div>
+
+                    {editingFor?.id === item.id && (
+                      <form onSubmit={updateEstablishment} className="inline-form edit-establishment-form">
+                        <div className="inline-form-heading">
+                          <div>
+                            <h4>Editar estabelecimento</h4>
+                            <p>Atualize o cadastro. Deixe a conexão vazia para manter o banco atual.</p>
+                          </div>
+                          <button type="button" onClick={() => setEditingFor(null)} className="text-button">Fechar</button>
+                        </div>
+                        <div className="form-grid edit-establishment-grid">
+                          <Field name="nome" label="Nome" defaultValue={item.nome} required />
+                          <Field name="slug" label="Link" defaultValue={item.slug} required />
+                          <Field name="documento" label="CNPJ ou documento" defaultValue={item.documento ?? ""} />
+                          <Field name="email" label="E-mail comercial" type="email" defaultValue={item.email ?? ""} />
+                          <Field name="telefone" label="Telefone" defaultValue={item.telefone ?? ""} />
+                          <Field name="databaseUrl" label="Nova conexão PostgreSQL" type="password" placeholder="Manter conexão atual" hint="Ao trocar o banco, o cliente volta para Em teste e precisa ser preparado novamente." />
+                          <OwnerActions saving={saving} onCancel={() => setEditingFor(null)} label="Salvar alterações" />
+                        </div>
+                      </form>
+                    )}
 
                     {printerToken?.id === item.id && (
                       <div className="token-banner">
@@ -570,6 +626,7 @@ function Field({
   type = "text",
   placeholder,
   defaultValue,
+  hint,
   required = false,
 }: {
   name: string;
@@ -577,6 +634,7 @@ function Field({
   type?: string;
   placeholder?: string;
   defaultValue?: string;
+  hint?: string;
   required?: boolean;
 }) {
   return (
@@ -592,6 +650,7 @@ function Field({
         placeholder={placeholder}
         autoComplete="off"
       />
+      {hint ? <small className="field-hint">{hint}</small> : null}
     </label>
   );
 }

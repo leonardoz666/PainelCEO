@@ -33,6 +33,7 @@ type AuditResponse = {
 const ACTIONS = [
   ["", "Todas as ações"],
   ["ESTABELECIMENTO_CRIADO", "Estabelecimento criado"],
+  ["ESTABELECIMENTO_ATUALIZADO", "Estabelecimento atualizado"],
   ["BANCO_PROVISIONADO", "Banco atualizado"],
   ["STATUS_ALTERADO", "Status alterado"],
   ["ASSINATURA_ATUALIZADA", "Mensalidade atualizada"],

@@ -89,6 +89,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .field input { width: 100%; height: 45px; margin-top: 7px; padding: 0 13px; border: 1px solid #dbdded; border-radius: 11px; color: #171a3a; background: rgba(255,255,255,.92); box-shadow: inset 0 1px 1px rgba(34,29,73,.02); transition: border .16s ease, box-shadow .16s ease; }
 .field input::placeholder { color: #686e8a; }
 .field input:focus { border-color: #8d6ee9; box-shadow: 0 0 0 4px rgba(117,56,244,.09); outline: 0; }
+.field-hint { margin-top: 6px; display: block; color: #686e8a; font-size: 10px; line-height: 1.4; }
 .form-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 10px; }
 
 .clients-panel { padding: 17px 10px 10px; }
@@ -120,7 +121,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .status-select { position: relative; min-width: 0; }
 .status-select select { width: 100%; height: 43px; padding: 0 32px 0 12px; appearance: none; border: 1px solid #dbdced; border-radius: 11px; color: #303657; background: white; font-size: 12px; font-weight: 670; cursor: pointer; }
 .status-select svg { position: absolute; top: 14px; right: 11px; pointer-events: none; color: #74799a; }
-.client-actions { min-width: 0; display: grid; grid-template-columns: repeat(4, minmax(65px,1fr)) minmax(112px,1.35fr); gap: 7px; }
+.client-actions { min-width: 0; display: grid; grid-template-columns: repeat(5, minmax(62px,1fr)) minmax(112px,1.35fr); gap: 7px; }
 .client-actions button { min-height: 72px; padding: 9px 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; border: 1px solid #dedff0; border-radius: 11px; color: #3f466f; background: #fff; font-size: 10px; font-weight: 690; line-height: 1.18; text-align: center; cursor: pointer; transition: color .16s ease, border .16s ease, background .16s ease, transform .16s ease; }
 .client-actions button:hover { transform: translateY(-1px); border-color: #bdaaf5; color: #5a2aca; background: #faf8ff; }
 .client-actions button:disabled { cursor: not-allowed; opacity: .55; transform: none; }
@@ -131,6 +132,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .token-banner { color: #774d0d; background: #fff9ea; border-radius: 12px; font-size: 12px; }
 .token-banner code { margin-top: 8px; padding: 9px 10px; display: block; overflow-wrap: anywhere; border-radius: 8px; color: #4f390f; background: white; font-family: "Manrope Variable", "Segoe UI", sans-serif; font-variant-numeric: tabular-nums; letter-spacing: .025em; }
 .inline-form { display: grid; gap: 17px; }
+.inline-form-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.inline-form-heading h4 { margin: 0; color: var(--ink); font-size: 16px; font-weight: 790; letter-spacing: -.015em; }
+.inline-form-heading p { margin: 5px 0 0; color: #686e8a; font-size: 12px; }
+.edit-establishment-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
 .mode-tabs { display: flex; gap: 7px; }
 .mode-tabs button { padding: 9px 13px; border: 0; border-radius: 9px; color: #64698a; background: #efeff8; font-size: 12px; font-weight: 730; cursor: pointer; }
 .mode-tabs button.active { color: white; background: var(--violet-700); }
@@ -174,7 +179,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .audit-pagination button:disabled { cursor: not-allowed; opacity: .42; }
 @keyframes shimmer { to { background-position: -200% 0; } }
 
-@media (max-width: 1260px) {
+@media (max-width: 1420px) {
   .client-card { grid-template-columns: minmax(280px,1fr) minmax(245px,.8fr); }
   .client-actions { grid-column: 1 / -1; }
 }
@@ -206,6 +211,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   .client-actions { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .client-actions .access-button { grid-column: 1 / -1; min-height: 52px; }
   .form-grid, .form-grid--owner { grid-template-columns: 1fr; }
+  .edit-establishment-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .audit-toolbar { align-items: stretch; flex-direction: column; }
   .audit-controls { align-items: stretch; flex-wrap: wrap; }
   .audit-search { min-width: 0; flex: 1 1 100%; }
@@ -229,6 +235,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
   .status-select { grid-column: 1 / -1; }
   .form-actions { flex-direction: column-reverse; }
   .form-actions button { width: 100%; }
+  .inline-form-heading { flex-direction: column; }
+  .inline-form-heading .text-button { padding-left: 0; }
+  .edit-establishment-grid { grid-template-columns: 1fr; }
   .audit-panel { border-radius: 18px; }
   .audit-controls .refresh-button { width: 44px; height: 44px; }
   .audit-item { padding: 15px 12px; grid-template-columns: 38px minmax(0,1fr); gap: 11px; }
