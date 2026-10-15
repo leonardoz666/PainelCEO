@@ -3,11 +3,13 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  ArrowRight,
   Building2,
   Check,
   ChevronDown,
   CircleDollarSign,
   Clipboard,
+  Crown,
   ExternalLink,
   Database,
   KeyRound,
@@ -15,6 +17,7 @@ import {
   LogOut,
   Plus,
   RefreshCw,
+  Search,
   ShieldCheck,
   Store,
   TriangleAlert,
@@ -74,20 +77,16 @@ function Metric({
   label: string;
   value: number;
   icon: typeof Store;
-  tone: string;
+  tone: "violet" | "green" | "blue" | "amber" | "red";
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-3 border-b border-slate-200 py-4 last:border-0 sm:border-b-0 sm:border-r sm:px-5 sm:first:pl-0 sm:last:border-r-0">
-      <span
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${tone}`}
-      >
+    <div className={`metric-card metric-card--${tone}`}>
+      <span className="metric-icon">
         <Icon size={19} />
       </span>
-      <div>
-        <p className="text-2xl font-bold tabular-nums text-slate-950">
-          {value}
-        </p>
-        <p className="text-xs font-semibold text-slate-500">{label}</p>
+      <div className="relative z-10 min-w-0">
+        <p className="metric-value">{value}</p>
+        <p className="metric-label">{label}</p>
       </div>
     </div>
   );
@@ -104,9 +103,11 @@ export default function DashboardPage() {
   const [ownerFor, setOwnerFor] = useState<Establishment | null>(null);
   const [ownerMode, setOwnerMode] = useState<"create" | "reset">("create");
   const [copied, setCopied] = useState("");
+  const [announcement, setAnnouncement] = useState("");
   const [provisioning, setProvisioning] = useState("");
   const [billingFor, setBillingFor] = useState<Establishment | null>(null);
   const [printerToken, setPrinterToken] = useState<{ id: string; value: string } | null>(null);
+  const [search, setSearch] = useState("");
 
   const operationalBase = useMemo(
     () =>
@@ -116,6 +117,16 @@ export default function DashboardPage() {
       ).replace(/\/$/, ""),
     [],
   );
+
+  const visibleItems = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase("pt-BR");
+    if (!query) return items;
+    return items.filter((item) =>
+      [item.nome, item.slug, item.email, item.telefone]
+        .filter(Boolean)
+        .some((value) => String(value).toLocaleLowerCase("pt-BR").includes(query)),
+    );
+  }, [items, search]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -263,9 +274,15 @@ export default function DashboardPage() {
 
   async function copyLink(item: Establishment) {
     const link = `${operationalBase}/e/${item.slug}`;
-    await navigator.clipboard.writeText(link);
-    setCopied(item.id);
-    window.setTimeout(() => setCopied(""), 1800);
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(item.id);
+      setAnnouncement(`Link de ${item.nome} copiado.`);
+      window.setTimeout(() => setCopied(""), 1800);
+    } catch {
+      setError("Não foi possível copiar o link.");
+      setAnnouncement("Falha ao copiar o link.");
+    }
   }
 
   async function provisionDatabase(item: Establishment) {
@@ -308,363 +325,211 @@ export default function DashboardPage() {
     try {
       const result = await api<{ token: string }>(`/estabelecimentos/${item.id}/impressao/token`, { method: "POST" });
       setPrinterToken({ id: item.id, value: result.token });
-      await navigator.clipboard.writeText(result.token).catch(() => undefined);
+      const tokenCopied = await navigator.clipboard.writeText(result.token).then(() => true).catch(() => false);
+      setAnnouncement(tokenCopied ? "Token de impressão gerado e copiado." : "Token de impressão gerado. Copie-o no painel.");
       await load();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Falha ao gerar token de impressão");
+      setAnnouncement("Falha ao gerar o token de impressão.");
     }
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
-      <aside className="border-b border-slate-200 bg-[#e8eef5] px-5 py-4 lg:min-h-screen lg:border-b-0 lg:border-r lg:px-4 lg:py-6">
-        <div className="flex items-center justify-between lg:block">
-          <div className="flex items-center gap-3 px-1">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--primary)] text-white">
-              <ShieldCheck size={21} />
-            </span>
-            <div>
-              <p className="font-bold text-slate-950">Rei Plataforma</p>
-              <p className="text-xs text-slate-500">Painel CEO</p>
-            </div>
+    <div className="ceo-shell">
+      <aside className="ceo-sidebar">
+        <div className="sidebar-brand">
+          <span className="brand-mark"><Crown size={25} strokeWidth={2.1} /></span>
+          <div>
+            <p className="brand-name">Rei Plataforma</p>
+            <p className="brand-caption">Painel CEO</p>
           </div>
-          <button
-            onClick={() => void logout()}
-            className="flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-slate-600 hover:bg-white hover:text-slate-950 lg:mt-10 lg:w-full"
-          >
-            <LogOut size={17} /> <span className="hidden lg:inline">Sair</span>
-          </button>
         </div>
-        <nav className="mt-6 hidden lg:block">
-          <span className="flex items-center gap-3 rounded-lg bg-white px-3 py-2.5 text-sm font-bold text-slate-950 shadow-sm">
-            <Building2 size={18} className="text-[var(--primary)]" /> Estabelecimentos
+
+        <button onClick={() => void logout()} className="sidebar-logout">
+          <LogOut size={19} /> <span>Sair</span>
+        </button>
+
+        <nav className="sidebar-nav" aria-label="Navegação principal">
+          <span className="sidebar-nav-item sidebar-nav-item--active">
+            <Building2 size={20} /> Estabelecimentos
           </span>
         </nav>
+
+        <div className="sidebar-footer">
+          <span className="sidebar-footer-icon"><Crown size={18} /></span>
+          <div><strong>Rei Plataforma</strong><small>v1.0.0</small></div>
+        </div>
       </aside>
 
-      <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <div className="mx-auto max-w-7xl">
-          <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <main className="ceo-main">
+        <p className="sr-only" aria-live="polite" aria-atomic="true">{announcement}</p>
+        <div className="ceo-content">
+          <header className="page-header">
             <div>
-              <h1 className="text-2xl font-bold tracking-[-0.03em] text-slate-950 sm:text-3xl">
-                Estabelecimentos
-              </h1>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
-                Controle clientes, disponibilidade e acessos sem misturar os
-                dados operacionais.
-              </p>
+              <h1>Estabelecimentos</h1>
+              <p>Controle clientes, disponibilidade e acessos sem misturar os dados operacionais.</p>
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => void load()}
-                disabled={loading}
-                aria-label="Atualizar"
-                className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-              >
-                <RefreshCw
-                  size={17}
-                  className={loading ? "animate-spin" : ""}
-                />
+            <div className="header-actions">
+              <button onClick={() => void load()} disabled={loading} aria-label="Atualizar dados" className="refresh-button">
+                <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
               </button>
-              <button
-                onClick={() => setShowCreate((value) => !value)}
-                className="flex h-10 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-bold text-white shadow-sm hover:bg-[var(--primary-hover)]"
-              >
-                <Plus size={17} /> Novo estabelecimento
+              <button onClick={() => setShowCreate((value) => !value)} className="primary-button">
+                <Plus size={20} /> Novo estabelecimento
               </button>
             </div>
           </header>
 
           {error && (
-            <div
-              role="alert"
-              className="mt-5 flex items-start gap-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800"
-            >
-              <TriangleAlert size={18} className="mt-0.5 shrink-0" />
+            <div role="alert" className="error-banner">
+              <TriangleAlert size={19} />
               <span>{error}</span>
-              <button
-                onClick={() => setError("")}
-                className="ml-auto font-bold"
-              >
-                Fechar
-              </button>
+              <button onClick={() => setError("")}>Fechar</button>
             </div>
           )}
 
-          <section className="mt-6 grid rounded-xl border border-slate-200 bg-white px-5 shadow-sm sm:grid-cols-5">
-            <Metric
-              label="Total"
-              value={summary?.total ?? 0}
-              icon={Store}
-              tone="bg-slate-100 text-slate-700"
-            />
-            <Metric
-              label="Ativos"
-              value={summary?.ativos ?? 0}
-              icon={Check}
-              tone="bg-emerald-50 text-emerald-700"
-            />
-            <Metric
-              label="Em teste"
-              value={summary?.testes ?? 0}
-              icon={Users}
-              tone="bg-blue-50 text-blue-700"
-            />
-            <Metric
-              label="Pendentes"
-              value={summary?.pendentes ?? 0}
-              icon={CircleDollarSign}
-              tone="bg-amber-50 text-amber-700"
-            />
-            <Metric
-              label="Suspensos"
-              value={summary?.suspensos ?? 0}
-              icon={TriangleAlert}
-              tone="bg-red-50 text-red-700"
-            />
+          <section className="metrics-panel" aria-label="Resumo dos estabelecimentos">
+            <Metric label="Total" value={summary?.total ?? 0} icon={Building2} tone="violet" />
+            <Metric label="Ativos" value={summary?.ativos ?? 0} icon={Check} tone="green" />
+            <Metric label="Em teste" value={summary?.testes ?? 0} icon={Users} tone="blue" />
+            <Metric label="Pendentes" value={summary?.pendentes ?? 0} icon={CircleDollarSign} tone="amber" />
+            <Metric label="Suspensos" value={summary?.suspensos ?? 0} icon={TriangleAlert} tone="red" />
           </section>
 
           {showCreate && (
-            <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-              <div className="mb-5">
-                <h2 className="text-lg font-bold text-slate-950">
-                  Cadastrar estabelecimento
-                </h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  O banco informado será testado e a conexão ficará
-                  criptografada.
-                </p>
+            <section className="form-panel">
+              <div className="panel-heading">
+                <div>
+                  <h2>Novo estabelecimento</h2>
+                  <p>A conexão será testada e armazenada de forma criptografada.</p>
+                </div>
+                <button type="button" onClick={() => setShowCreate(false)} className="text-button">Fechar</button>
               </div>
-              <form
-                onSubmit={createEstablishment}
-                className="grid gap-4 md:grid-cols-2"
-              >
+              <form onSubmit={createEstablishment} className="form-grid">
                 <Field name="nome" label="Nome" required />
-                <Field
-                  name="slug"
-                  label="Link"
-                  placeholder="rei-da-carne-de-sol"
-                  required
-                />
+                <Field name="slug" label="Link" placeholder="rei-da-carne-de-sol" required />
                 <Field name="documento" label="CNPJ ou documento" />
                 <Field name="email" label="E-mail comercial" type="email" />
                 <Field name="telefone" label="Telefone" />
-                <Field
-                  name="valorMensal"
-                  label="Mensalidade"
-                  type="number"
-                  placeholder="0,00"
-                />
-                <Field
-                  name="proximoVencimento"
-                  label="Próximo vencimento"
-                  type="date"
-                />
-                <Field
-                  name="databaseUrl"
-                  label="Conexão PostgreSQL"
-                  type="password"
-                  required
-                />
-                <div className="flex justify-end gap-3 md:col-span-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowCreate(false)}
-                    className="h-10 rounded-lg px-4 text-sm font-bold text-slate-600 hover:bg-slate-100"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    disabled={saving}
-                    className="flex h-10 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-bold text-white hover:bg-[var(--primary-hover)] disabled:opacity-60"
-                  >
-                    {saving && (
-                      <LoaderCircle size={16} className="animate-spin" />
-                    )}{" "}
-                    Cadastrar
-                  </button>
-                </div>
+                <Field name="valorMensal" label="Mensalidade" type="number" placeholder="0,00" />
+                <Field name="proximoVencimento" label="Próximo vencimento" type="date" />
+                <Field name="databaseUrl" label="Conexão PostgreSQL" type="password" required />
+                <OwnerActions saving={saving} onCancel={() => setShowCreate(false)} label="Cadastrar estabelecimento" />
               </form>
             </section>
           )}
 
-          <section className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-200 px-5 py-4">
-              <h2 className="font-bold text-slate-950">
-                Clientes da plataforma
-              </h2>
+          <section className="clients-panel">
+            <div className="clients-header">
+              <div>
+                <h2>Clientes da plataforma</h2>
+                <p>{items.length} {items.length === 1 ? "estabelecimento cadastrado" : "estabelecimentos cadastrados"}</p>
+              </div>
+              <label className="search-field">
+                <span className="sr-only">Buscar estabelecimento</span>
+                <Search size={18} />
+                <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar estabelecimento..." />
+              </label>
             </div>
+
             {loading ? (
-              <div
-                className="space-y-3 p-5"
-                aria-label="Carregando estabelecimentos"
-              >
-                {[1, 2, 3].map((item) => (
-                  <div
-                    key={item}
-                    className="h-16 animate-pulse rounded-lg bg-slate-100"
-                  />
-                ))}
+              <div className="loading-list" aria-label="Carregando estabelecimentos">
+                {[1, 2, 3].map((item) => <div key={item} className="client-skeleton" />)}
               </div>
             ) : items.length === 0 ? (
-              <div className="px-6 py-16 text-center">
-                <Building2 className="mx-auto text-slate-300" size={38} />
-                <h3 className="mt-4 font-bold text-slate-900">
-                  Nenhum estabelecimento cadastrado
-                </h3>
-                <p className="mt-1 text-sm text-slate-500">
-                  Cadastre o primeiro cliente para gerar o link de acesso.
-                </p>
+              <div className="empty-state">
+                <Building2 size={42} />
+                <h3>Nenhum estabelecimento cadastrado</h3>
+                <p>Cadastre o primeiro cliente para gerar seu link de acesso.</p>
+              </div>
+            ) : visibleItems.length === 0 ? (
+              <div className="empty-state">
+                <Search size={38} />
+                <h3>Nenhum resultado</h3>
+                <p>Tente buscar pelo nome, link, e-mail ou telefone.</p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-200">
-                {items.map((item) => (
-                  <article key={item.id} className="p-5">
-                    <div className="grid gap-4 lg:grid-cols-[minmax(220px,1.4fr)_minmax(140px,.7fr)_minmax(150px,.7fr)_auto] lg:items-center">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="truncate font-bold text-slate-950">
-                            {item.nome}
-                          </h3>
-                          <span
-                            className={`rounded-full px-2.5 py-1 text-xs font-bold ${STATUS_STYLE[item.status]}`}
-                          >
-                            {STATUS_LABEL[item.status]}
-                          </span>
+              <div className="clients-list">
+                {visibleItems.map((item) => (
+                  <article key={item.id} className="client-card">
+                    <div className="client-main">
+                      <span className="client-logo"><Crown size={29} /></span>
+                      <div className="client-identity">
+                        <div className="client-title-line">
+                          <h3>{item.nome}</h3>
+                          <span className={`status-pill ${STATUS_STYLE[item.status]}`}><span />{STATUS_LABEL[item.status]}</span>
                         </div>
-                        <p className="mt-1 truncate text-sm text-slate-500">
-                          {item.slug} {item.email ? `• ${item.email}` : ""}
-                        </p>
-                        <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold">
-                          <span className={item.bancoPronto ? "text-emerald-700" : "text-amber-700"}>{item.bancoPronto ? "Banco pronto" : "Banco pendente"}</span>
-                          <span className={item.donoPronto ? "text-emerald-700" : "text-amber-700"}>{item.donoPronto ? "Dono criado" : "Dono pendente"}</span>
-                          <span className={item.impressaoConfigurada ? "text-emerald-700" : "text-slate-500"}>{item.impressaoConfigurada ? "Impressão protegida" : "Impressão pendente"}</span>
+                        <a href={`${operationalBase}/e/${item.slug}`} target="_blank" rel="noreferrer" className="client-slug">
+                          {item.slug}<ExternalLink size={13} />
+                        </a>
+                        <div className="readiness-list">
+                          <span className={item.bancoPronto ? "ready" : "waiting"}>{item.bancoPronto ? "Banco pronto" : "Banco pendente"}</span>
+                          <span className={item.donoPronto ? "ready" : "waiting"}>{item.donoPronto ? "Dono criado" : "Dono pendente"}</span>
+                          <span className={item.impressaoConfigurada ? "protected" : "waiting"}><ShieldCheck size={13} />{item.impressaoConfigurada ? "Impressão protegida" : "Impressão pendente"}</span>
                         </div>
                       </div>
+                    </div>
+
+                    <div className="billing-summary">
+                      <span className="billing-icon"><CircleDollarSign size={20} /></span>
                       <div>
-                        <p className="text-xs font-semibold text-slate-500">
-                          Mensalidade
-                        </p>
-                        <p className="mt-1 font-bold tabular-nums text-slate-900">
-                          {Number(
-                            item.assinatura?.valorMensal ?? 0,
-                          ).toLocaleString("pt-BR", {
-                            style: "currency",
-                            currency: "BRL",
-                          })}
-                        </p>
+                        <small>Mensalidade</small>
+                        <strong>{Number(item.assinatura?.valorMensal ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>
                       </div>
-                      <label className="relative block">
+                      <label className="status-select">
                         <span className="sr-only">Situação de {item.nome}</span>
-                        <select
-                          value={item.status}
-                          onChange={(event) =>
-                            void changeStatus(
-                              item,
-                              event.target.value as Status,
-                            )
-                          }
-                          className="h-10 w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 pr-9 text-sm font-semibold text-slate-800"
-                        >
+                        <select value={item.status} onChange={(event) => void changeStatus(item, event.target.value as Status)}>
                           <option value="TESTE">Em teste</option>
                           <option value="ATIVO" disabled={!item.bancoPronto || !item.donoPronto}>Ativo</option>
                           <option value="INADIMPLENTE">Inadimplente</option>
                           <option value="SUSPENSO">Suspenso</option>
                           <option value="CANCELADO">Cancelado</option>
                         </select>
-                        <ChevronDown
-                          size={15}
-                          className="pointer-events-none absolute right-3 top-3 text-slate-500"
-                        />
+                        <ChevronDown size={15} />
                       </label>
-                      <div className="flex flex-wrap gap-2 lg:justify-end">
-                        <button
-                          onClick={() => void provisionDatabase(item)}
-                          disabled={provisioning === item.id}
-                          title="Aplicar atualizações do sistema no banco deste estabelecimento"
-                          className="flex h-10 items-center gap-2 rounded-lg border border-slate-300 px-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-                        >
-                          {provisioning === item.id ? <LoaderCircle size={16} className="animate-spin" /> : <Database size={16} />}
-                          {item.bancoPronto ? "Atualizar banco" : "Preparar banco"}
-                        </button>
-                        <button
-                          onClick={() => setBillingFor(current => current?.id === item.id ? null : item)}
-                          className="flex h-10 items-center gap-2 rounded-lg border border-slate-300 px-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
-                        >
-                          <CircleDollarSign size={16} /> Mensalidade
-                        </button>
-                        <button
-                          onClick={() => void generatePrinterToken(item)}
-                          className="flex h-10 items-center gap-2 rounded-lg border border-slate-300 px-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
-                        >
-                          <ShieldCheck size={16} /> Token impressão
-                        </button>
-                        <button
-                          onClick={() => void copyLink(item)}
-                          className="flex h-10 items-center gap-2 rounded-lg border border-slate-300 px-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
-                        >
-                          {copied === item.id ? (
-                            <Check size={16} />
-                          ) : (
-                            <Clipboard size={16} />
-                          )}{" "}
-                          {copied === item.id ? "Copiado" : "Copiar link"}
-                        </button>
-                        <a
-                          href={`${operationalBase}/e/${item.slug}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          aria-label={`Abrir ${item.nome}`}
-                          className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50"
-                        >
-                          <ExternalLink size={16} />
-                        </a>
-                        <button
-                          onClick={() => {
-                            setOwnerFor((current) =>
-                              current?.id === item.id ? null : item,
-                            );
-                            setOwnerMode("create");
-                          }}
-                          className="flex h-10 items-center gap-2 rounded-lg bg-slate-900 px-3 text-sm font-bold text-white hover:bg-slate-800"
-                        >
-                          <KeyRound size={16} /> Acesso
-                        </button>
-                      </div>
                     </div>
+
+                    <div className="client-actions">
+                      <button onClick={() => void provisionDatabase(item)} disabled={provisioning === item.id} title="Aplicar atualizações no banco">
+                        {provisioning === item.id ? <LoaderCircle size={20} className="animate-spin" /> : <Database size={20} />}
+                        <span>{item.bancoPronto ? "Atualizar banco" : "Preparar banco"}</span>
+                      </button>
+                      <button onClick={() => setBillingFor((current) => current?.id === item.id ? null : item)}>
+                        <CircleDollarSign size={20} /><span>Mensalidade</span>
+                      </button>
+                      <button onClick={() => void generatePrinterToken(item)}>
+                        <ShieldCheck size={20} /><span>Token impressão</span>
+                      </button>
+                      <button onClick={() => void copyLink(item)}>
+                        {copied === item.id ? <Check size={20} /> : <Clipboard size={20} />}<span>{copied === item.id ? "Copiado" : "Copiar link"}</span>
+                      </button>
+                      <button className="access-button" onClick={() => { setOwnerFor((current) => current?.id === item.id ? null : item); setOwnerMode("create"); }}>
+                        <KeyRound size={19} /><span>Acesso</span><ArrowRight size={16} aria-hidden />
+                      </button>
+                    </div>
+
                     {printerToken?.id === item.id && (
-                      <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                      <div className="token-banner">
                         <strong>Copie agora: este token será mostrado somente desta vez.</strong>
-                        <code className="mt-2 block break-all rounded bg-white p-2 font-mono text-xs">{printerToken.value}</code>
+                        <code>{printerToken.value}</code>
                       </div>
                     )}
+
                     {billingFor?.id === item.id && (
-                      <form onSubmit={updateSubscription} className="mt-5 grid gap-4 border-t border-slate-200 pt-5 md:grid-cols-2">
+                      <form onSubmit={updateSubscription} className="inline-form md:grid-cols-2">
                         <Field name="valorMensal" label="Mensalidade" type="number" defaultValue={String(item.assinatura?.valorMensal ?? 0)} required />
                         <Field name="proximoVencimento" label="Próximo vencimento" type="date" defaultValue={item.assinatura?.proximoVencimento?.slice(0, 10) || ""} />
                         <OwnerActions saving={saving} onCancel={() => setBillingFor(null)} label="Salvar mensalidade" />
                       </form>
                     )}
+
                     {ownerFor?.id === item.id && (
-                      <div className="mt-5 border-t border-slate-200 pt-5">
-                        <div className="mb-4 flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setOwnerMode("create")}
-                            className={`h-9 rounded-lg px-3 text-sm font-bold ${ownerMode === "create" ? "bg-[var(--primary)] text-white" : "bg-slate-100 text-slate-700"}`}
-                          >
-                            Criar Dono
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setOwnerMode("reset")}
-                            className={`h-9 rounded-lg px-3 text-sm font-bold ${ownerMode === "reset" ? "bg-[var(--primary)] text-white" : "bg-slate-100 text-slate-700"}`}
-                          >
-                            Redefinir senha
-                          </button>
+                      <div className="inline-form">
+                        <div className="mode-tabs">
+                          <button type="button" onClick={() => setOwnerMode("create")} className={ownerMode === "create" ? "active" : ""}>Criar Dono</button>
+                          <button type="button" onClick={() => setOwnerMode("reset")} className={ownerMode === "reset" ? "active" : ""}>Redefinir senha</button>
                         </div>
                         {ownerMode === "create" ? (
-                          <form onSubmit={createOwner} className="grid gap-4 md:grid-cols-4">
+                          <form onSubmit={createOwner} className="form-grid form-grid--owner">
                             <Field name="nome" label="Nome do Dono" required />
                             <Field name="login" label="Login" required />
                             <Field name="email" label="E-mail" type="email" />
@@ -672,7 +537,7 @@ export default function DashboardPage() {
                             <OwnerActions saving={saving} onCancel={() => setOwnerFor(null)} label="Criar acesso do Dono" />
                           </form>
                         ) : (
-                          <form onSubmit={resetOwnerPassword} className="grid gap-4 md:grid-cols-2">
+                          <form onSubmit={resetOwnerPassword} className="form-grid md:grid-cols-2">
                             <Field name="login" label="Login do Dono" required />
                             <Field name="senha" label="Nova senha" type="password" required />
                             <OwnerActions saving={saving} onCancel={() => setOwnerFor(null)} label="Redefinir senha" />
@@ -707,8 +572,8 @@ function Field({
   required?: boolean;
 }) {
   return (
-    <label className="block">
-      <span className="text-sm font-bold text-slate-900">{label}</span>
+    <label className="field">
+      <span>{label}</span>
       <input
         name={name}
         type={type}
@@ -718,7 +583,6 @@ function Field({
         defaultValue={defaultValue}
         placeholder={placeholder}
         autoComplete="off"
-        className="mt-2 h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 shadow-sm transition placeholder:text-slate-400 focus:border-[var(--primary)]"
       />
     </label>
   );
@@ -734,17 +598,17 @@ function OwnerActions({
   label: string;
 }) {
   return (
-    <div className="flex justify-end gap-3 md:col-span-full">
+    <div className="form-actions">
       <button
         type="button"
         onClick={onCancel}
-        className="h-10 rounded-lg px-4 text-sm font-bold text-slate-600 hover:bg-slate-100"
+        className="secondary-button"
       >
         Cancelar
       </button>
       <button
         disabled={saving}
-        className="h-10 rounded-lg bg-[var(--primary)] px-4 text-sm font-bold text-white hover:bg-[var(--primary-hover)] disabled:opacity-60"
+        className="primary-button"
       >
         {label}
       </button>
