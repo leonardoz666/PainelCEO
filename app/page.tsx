@@ -11,6 +11,7 @@ import {
   Clipboard,
   Crown,
   ExternalLink,
+  History,
   Database,
   KeyRound,
   LoaderCircle,
@@ -24,6 +25,7 @@ import {
   Users,
 } from "lucide-react";
 import { api, ApiError } from "@/app/lib/api";
+import { AuditHistory } from "@/app/components/AuditHistory";
 
 type Status = "TESTE" | "ATIVO" | "INADIMPLENTE" | "SUSPENSO" | "CANCELADO";
 type Summary = {
@@ -94,6 +96,7 @@ function Metric({
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [activeView, setActiveView] = useState<"establishments" | "history">("establishments");
   const [summary, setSummary] = useState<Summary | null>(null);
   const [items, setItems] = useState<Establishment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -350,9 +353,12 @@ export default function DashboardPage() {
         </button>
 
         <nav className="sidebar-nav" aria-label="Navegação principal">
-          <span className="sidebar-nav-item sidebar-nav-item--active">
+          <button type="button" onClick={() => setActiveView("establishments")} className={`sidebar-nav-item ${activeView === "establishments" ? "sidebar-nav-item--active" : ""}`} aria-current={activeView === "establishments" ? "page" : undefined}>
             <Building2 size={20} /> Estabelecimentos
-          </span>
+          </button>
+          <button type="button" onClick={() => setActiveView("history")} className={`sidebar-nav-item ${activeView === "history" ? "sidebar-nav-item--active" : ""}`} aria-current={activeView === "history" ? "page" : undefined}>
+            <History size={20} /> Histórico
+          </button>
         </nav>
 
         <div className="sidebar-footer">
@@ -366,17 +372,17 @@ export default function DashboardPage() {
         <div className="ceo-content">
           <header className="page-header">
             <div>
-              <h1>Estabelecimentos</h1>
-              <p>Controle clientes, disponibilidade e acessos sem misturar os dados operacionais.</p>
+              <h1>{activeView === "establishments" ? "Estabelecimentos" : "Histórico"}</h1>
+              <p>{activeView === "establishments" ? "Controle clientes, disponibilidade e acessos sem misturar os dados operacionais." : "Acompanhe todas as ações administrativas realizadas na plataforma."}</p>
             </div>
-            <div className="header-actions">
+            {activeView === "establishments" && <div className="header-actions">
               <button onClick={() => void load()} disabled={loading} aria-label="Atualizar dados" className="refresh-button">
                 <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
               </button>
               <button onClick={() => setShowCreate((value) => !value)} className="primary-button">
                 <Plus size={20} /> Novo estabelecimento
               </button>
-            </div>
+            </div>}
           </header>
 
           {error && (
@@ -387,6 +393,7 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {activeView === "establishments" ? <>
           <section className="metrics-panel" aria-label="Resumo dos estabelecimentos">
             <Metric label="Total" value={summary?.total ?? 0} icon={Building2} tone="violet" />
             <Metric label="Ativos" value={summary?.ativos ?? 0} icon={Check} tone="green" />
@@ -550,6 +557,7 @@ export default function DashboardPage() {
               </div>
             )}
           </section>
+          </> : <AuditHistory />}
         </div>
       </main>
     </div>
