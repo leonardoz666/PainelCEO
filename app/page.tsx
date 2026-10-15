@@ -38,6 +38,9 @@ type Establishment = {
   telefone: string | null;
   status: Status;
   bancoConfigurado: boolean;
+  bancoPronto: boolean;
+  donoPronto: boolean;
+  impressaoConfigurada: boolean;
   criadoEm: string;
   assinatura: {
     valorMensal: number;
@@ -102,6 +105,8 @@ export default function DashboardPage() {
   const [ownerMode, setOwnerMode] = useState<"create" | "reset">("create");
   const [copied, setCopied] = useState("");
   const [provisioning, setProvisioning] = useState("");
+  const [billingFor, setBillingFor] = useState<Establishment | null>(null);
+  const [printerToken, setPrinterToken] = useState<{ id: string; value: string } | null>(null);
 
   const operationalBase = useMemo(
     () =>
@@ -218,6 +223,7 @@ export default function DashboardPage() {
         }),
       });
       setOwnerFor(null);
+      await load();
     } catch (reason) {
       setError(
         reason instanceof Error
@@ -267,10 +273,45 @@ export default function DashboardPage() {
     setError("");
     try {
       await api(`/estabelecimentos/${item.id}/provisionar`, { method: "POST" });
+      await load();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Falha ao preparar o banco");
     } finally {
       setProvisioning("");
+    }
+  }
+
+  async function updateSubscription(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!billingFor) return;
+    setSaving(true);
+    const form = new FormData(event.currentTarget);
+    try {
+      await api(`/estabelecimentos/${billingFor.id}/assinatura`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          valorMensal: Number(form.get("valorMensal") || 0),
+          proximoVencimento: form.get("proximoVencimento") || null,
+        }),
+      });
+      setBillingFor(null);
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Falha ao atualizar mensalidade");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function generatePrinterToken(item: Establishment) {
+    setError("");
+    try {
+      const result = await api<{ token: string }>(`/estabelecimentos/${item.id}/impressao/token`, { method: "POST" });
+      setPrinterToken({ id: item.id, value: result.token });
+      await navigator.clipboard.writeText(result.token).catch(() => undefined);
+      await load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Falha ao gerar token de impressão");
     }
   }
 
@@ -279,7 +320,7 @@ export default function DashboardPage() {
       <aside className="border-b border-slate-200 bg-[#e8eef5] px-5 py-4 lg:min-h-screen lg:border-b-0 lg:border-r lg:px-4 lg:py-6">
         <div className="flex items-center justify-between lg:block">
           <div className="flex items-center gap-3 px-1">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-600 text-white">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--primary)] text-white">
               <ShieldCheck size={21} />
             </span>
             <div>
@@ -296,7 +337,7 @@ export default function DashboardPage() {
         </div>
         <nav className="mt-6 hidden lg:block">
           <span className="flex items-center gap-3 rounded-lg bg-white px-3 py-2.5 text-sm font-bold text-slate-950 shadow-sm">
-            <Building2 size={18} className="text-orange-600" /> Estabelecimentos
+            <Building2 size={18} className="text-[var(--primary)]" /> Estabelecimentos
           </span>
         </nav>
       </aside>
@@ -327,7 +368,7 @@ export default function DashboardPage() {
               </button>
               <button
                 onClick={() => setShowCreate((value) => !value)}
-                className="flex h-10 items-center gap-2 rounded-lg bg-orange-600 px-4 text-sm font-bold text-white shadow-sm hover:bg-orange-700"
+                className="flex h-10 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-bold text-white shadow-sm hover:bg-[var(--primary-hover)]"
               >
                 <Plus size={17} /> Novo estabelecimento
               </button>
@@ -435,7 +476,7 @@ export default function DashboardPage() {
                   </button>
                   <button
                     disabled={saving}
-                    className="flex h-10 items-center gap-2 rounded-lg bg-orange-600 px-4 text-sm font-bold text-white hover:bg-orange-700 disabled:opacity-60"
+                    className="flex h-10 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-bold text-white hover:bg-[var(--primary-hover)] disabled:opacity-60"
                   >
                     {saving && (
                       <LoaderCircle size={16} className="animate-spin" />
@@ -494,6 +535,11 @@ export default function DashboardPage() {
                         <p className="mt-1 truncate text-sm text-slate-500">
                           {item.slug} {item.email ? `• ${item.email}` : ""}
                         </p>
+                        <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold">
+                          <span className={item.bancoPronto ? "text-emerald-700" : "text-amber-700"}>{item.bancoPronto ? "Banco pronto" : "Banco pendente"}</span>
+                          <span className={item.donoPronto ? "text-emerald-700" : "text-amber-700"}>{item.donoPronto ? "Dono criado" : "Dono pendente"}</span>
+                          <span className={item.impressaoConfigurada ? "text-emerald-700" : "text-slate-500"}>{item.impressaoConfigurada ? "Impressão protegida" : "Impressão pendente"}</span>
+                        </div>
                       </div>
                       <div>
                         <p className="text-xs font-semibold text-slate-500">
@@ -521,7 +567,7 @@ export default function DashboardPage() {
                           className="h-10 w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 pr-9 text-sm font-semibold text-slate-800"
                         >
                           <option value="TESTE">Em teste</option>
-                          <option value="ATIVO">Ativo</option>
+                          <option value="ATIVO" disabled={!item.bancoPronto || !item.donoPronto}>Ativo</option>
                           <option value="INADIMPLENTE">Inadimplente</option>
                           <option value="SUSPENSO">Suspenso</option>
                           <option value="CANCELADO">Cancelado</option>
@@ -539,7 +585,19 @@ export default function DashboardPage() {
                           className="flex h-10 items-center gap-2 rounded-lg border border-slate-300 px-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
                         >
                           {provisioning === item.id ? <LoaderCircle size={16} className="animate-spin" /> : <Database size={16} />}
-                          Preparar banco
+                          {item.bancoPronto ? "Atualizar banco" : "Preparar banco"}
+                        </button>
+                        <button
+                          onClick={() => setBillingFor(current => current?.id === item.id ? null : item)}
+                          className="flex h-10 items-center gap-2 rounded-lg border border-slate-300 px-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                        >
+                          <CircleDollarSign size={16} /> Mensalidade
+                        </button>
+                        <button
+                          onClick={() => void generatePrinterToken(item)}
+                          className="flex h-10 items-center gap-2 rounded-lg border border-slate-300 px-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                        >
+                          <ShieldCheck size={16} /> Token impressão
                         </button>
                         <button
                           onClick={() => void copyLink(item)}
@@ -574,20 +632,33 @@ export default function DashboardPage() {
                         </button>
                       </div>
                     </div>
+                    {printerToken?.id === item.id && (
+                      <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                        <strong>Copie agora: este token será mostrado somente desta vez.</strong>
+                        <code className="mt-2 block break-all rounded bg-white p-2 font-mono text-xs">{printerToken.value}</code>
+                      </div>
+                    )}
+                    {billingFor?.id === item.id && (
+                      <form onSubmit={updateSubscription} className="mt-5 grid gap-4 border-t border-slate-200 pt-5 md:grid-cols-2">
+                        <Field name="valorMensal" label="Mensalidade" type="number" defaultValue={String(item.assinatura?.valorMensal ?? 0)} required />
+                        <Field name="proximoVencimento" label="Próximo vencimento" type="date" defaultValue={item.assinatura?.proximoVencimento?.slice(0, 10) || ""} />
+                        <OwnerActions saving={saving} onCancel={() => setBillingFor(null)} label="Salvar mensalidade" />
+                      </form>
+                    )}
                     {ownerFor?.id === item.id && (
                       <div className="mt-5 border-t border-slate-200 pt-5">
                         <div className="mb-4 flex gap-2">
                           <button
                             type="button"
                             onClick={() => setOwnerMode("create")}
-                            className={`h-9 rounded-lg px-3 text-sm font-bold ${ownerMode === "create" ? "bg-orange-600 text-white" : "bg-slate-100 text-slate-700"}`}
+                            className={`h-9 rounded-lg px-3 text-sm font-bold ${ownerMode === "create" ? "bg-[var(--primary)] text-white" : "bg-slate-100 text-slate-700"}`}
                           >
                             Criar Dono
                           </button>
                           <button
                             type="button"
                             onClick={() => setOwnerMode("reset")}
-                            className={`h-9 rounded-lg px-3 text-sm font-bold ${ownerMode === "reset" ? "bg-orange-600 text-white" : "bg-slate-100 text-slate-700"}`}
+                            className={`h-9 rounded-lg px-3 text-sm font-bold ${ownerMode === "reset" ? "bg-[var(--primary)] text-white" : "bg-slate-100 text-slate-700"}`}
                           >
                             Redefinir senha
                           </button>
@@ -625,12 +696,14 @@ function Field({
   label,
   type = "text",
   placeholder,
+  defaultValue,
   required = false,
 }: {
   name: string;
   label: string;
   type?: string;
   placeholder?: string;
+  defaultValue?: string;
   required?: boolean;
 }) {
   return (
@@ -639,10 +712,13 @@ function Field({
       <input
         name={name}
         type={type}
+        step={type === "number" ? "0.01" : undefined}
+        min={type === "number" ? "0" : undefined}
         required={required}
+        defaultValue={defaultValue}
         placeholder={placeholder}
         autoComplete="off"
-        className="mt-2 h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 shadow-sm transition placeholder:text-slate-400 focus:border-orange-500"
+        className="mt-2 h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-950 shadow-sm transition placeholder:text-slate-400 focus:border-[var(--primary)]"
       />
     </label>
   );
@@ -668,7 +744,7 @@ function OwnerActions({
       </button>
       <button
         disabled={saving}
-        className="h-10 rounded-lg bg-orange-600 px-4 text-sm font-bold text-white hover:bg-orange-700 disabled:opacity-60"
+        className="h-10 rounded-lg bg-[var(--primary)] px-4 text-sm font-bold text-white hover:bg-[var(--primary-hover)] disabled:opacity-60"
       >
         {label}
       </button>
