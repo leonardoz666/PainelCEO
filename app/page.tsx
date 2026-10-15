@@ -17,6 +17,7 @@ import {
   LoaderCircle,
   LogOut,
   Pencil,
+  Palette,
   Plus,
   RefreshCw,
   Search,
@@ -27,6 +28,7 @@ import {
 } from "lucide-react";
 import { api, ApiError } from "@/app/lib/api";
 import { AuditHistory } from "@/app/components/AuditHistory";
+import { BrandingEditor } from "@/app/components/BrandingEditor";
 
 type Status = "TESTE" | "ATIVO" | "INADIMPLENTE" | "SUSPENSO" | "CANCELADO";
 type Summary = {
@@ -112,6 +114,7 @@ export default function DashboardPage() {
   const [provisioning, setProvisioning] = useState("");
   const [billingFor, setBillingFor] = useState<Establishment | null>(null);
   const [editingFor, setEditingFor] = useState<Establishment | null>(null);
+  const [brandingFor, setBrandingFor] = useState<Establishment | null>(null);
   const [printerToken, setPrinterToken] = useState<{ id: string; value: string } | null>(null);
   const [search, setSearch] = useState("");
 
@@ -531,6 +534,9 @@ export default function DashboardPage() {
                       <button onClick={() => { setEditingFor((current) => current?.id === item.id ? null : item); setBillingFor(null); setOwnerFor(null); }}>
                         <Pencil size={20} /><span>Editar</span>
                       </button>
+                      <button onClick={() => { setBrandingFor((current) => current?.id === item.id ? null : item); setEditingFor(null); setBillingFor(null); setOwnerFor(null); }}>
+                        <Palette size={20} /><span>Personalizar</span>
+                      </button>
                       <button onClick={() => void provisionDatabase(item)} disabled={provisioning === item.id} title="Aplicar atualizações no banco">
                         {provisioning === item.id ? <LoaderCircle size={20} className="animate-spin" /> : <Database size={20} />}
                         <span>{item.bancoPronto ? "Atualizar banco" : "Preparar banco"}</span>
@@ -568,6 +574,14 @@ export default function DashboardPage() {
                           <OwnerActions saving={saving} onCancel={() => setEditingFor(null)} label="Salvar alterações" />
                         </div>
                       </form>
+                    )}
+
+                    {brandingFor?.id === item.id && (
+                      <BrandingEditor
+                        establishment={item}
+                        onClose={() => setBrandingFor(null)}
+                        onSaved={() => setAnnouncement(`Identidade visual de ${item.nome} atualizada.`)}
+                      />
                     )}
 
                     {printerToken?.id === item.id && (

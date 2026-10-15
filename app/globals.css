@@ -121,7 +121,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .status-select { position: relative; min-width: 0; }
 .status-select select { width: 100%; height: 43px; padding: 0 32px 0 12px; appearance: none; border: 1px solid #dbdced; border-radius: 11px; color: #303657; background: white; font-size: 12px; font-weight: 670; cursor: pointer; }
 .status-select svg { position: absolute; top: 14px; right: 11px; pointer-events: none; color: #74799a; }
-.client-actions { min-width: 0; display: grid; grid-template-columns: repeat(5, minmax(62px,1fr)) minmax(112px,1.35fr); gap: 7px; }
+.client-actions { min-width: 0; display: grid; grid-template-columns: repeat(6, minmax(62px,1fr)) minmax(112px,1.35fr); gap: 7px; }
 .client-actions button { min-height: 72px; padding: 9px 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; border: 1px solid #dedff0; border-radius: 11px; color: #3f466f; background: #fff; font-size: 10px; font-weight: 690; line-height: 1.18; text-align: center; cursor: pointer; transition: color .16s ease, border .16s ease, background .16s ease, transform .16s ease; }
 .client-actions button:hover { transform: translateY(-1px); border-color: #bdaaf5; color: #5a2aca; background: #faf8ff; }
 .client-actions button:disabled { cursor: not-allowed; opacity: .55; transform: none; }
@@ -179,7 +179,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .audit-pagination button:disabled { cursor: not-allowed; opacity: .42; }
 @keyframes shimmer { to { background-position: -200% 0; } }
 
-@media (max-width: 1420px) {
+@media (max-width: 1600px) {
   .client-card { grid-template-columns: minmax(280px,1fr) minmax(245px,.8fr); }
   .client-actions { grid-column: 1 / -1; }
 }
