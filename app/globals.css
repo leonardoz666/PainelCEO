@@ -86,9 +86,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .form-grid--owner { grid-template-columns: repeat(4, minmax(0,1fr)); }
 .field { display: block; min-width: 0; }
 .field > span { display: block; color: #303657; font-size: 13px; font-weight: 730; }
-.field input { width: 100%; height: 45px; margin-top: 7px; padding: 0 13px; border: 1px solid #dbdded; border-radius: 11px; color: #171a3a; background: rgba(255,255,255,.92); box-shadow: inset 0 1px 1px rgba(34,29,73,.02); transition: border .16s ease, box-shadow .16s ease; }
+.field :where(input, select) { width: 100%; height: 45px; margin-top: 7px; padding: 0 13px; border: 1px solid #dbdded; border-radius: 11px; color: #171a3a; background: rgba(255,255,255,.92); box-shadow: inset 0 1px 1px rgba(34,29,73,.02); transition: border .16s ease, box-shadow .16s ease; }
 .field input::placeholder { color: #686e8a; }
-.field input:focus { border-color: #8d6ee9; box-shadow: 0 0 0 4px rgba(117,56,244,.09); outline: 0; }
+.field :where(input, select):focus { border-color: #8d6ee9; box-shadow: 0 0 0 4px rgba(117,56,244,.09); outline: 0; }
 .field-hint { margin-top: 6px; display: block; color: #686e8a; font-size: 10px; line-height: 1.4; }
 .form-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 10px; }
 
