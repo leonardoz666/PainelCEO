@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
+  Trash2,
   UserRoundCog,
 } from "lucide-react";
 import { api } from "@/app/lib/api";
@@ -34,6 +35,7 @@ const ACTIONS = [
   ["", "Todas as ações"],
   ["ESTABELECIMENTO_CRIADO", "Estabelecimento criado"],
   ["ESTABELECIMENTO_ATUALIZADO", "Estabelecimento atualizado"],
+  ["ESTABELECIMENTO_REMOVIDO", "Estabelecimento removido"],
   ["BANCO_PROVISIONADO", "Banco atualizado"],
   ["STATUS_ALTERADO", "Status alterado"],
   ["ASSINATURA_ATUALIZADA", "Mensalidade atualizada"],
@@ -58,6 +60,8 @@ function safeDetail(value: string | null): Record<string, unknown> {
 
 function detailText(entry: AuditEntry): string {
   const detail = safeDetail(entry.detalhe);
+  if (entry.acao === "ESTABELECIMENTO_REMOVIDO")
+    return `${String(detail.nome ?? "Estabelecimento")} (${String(detail.slug ?? "link indisponível")}) foi excluído com os dados do banco e os arquivos operacionais.`;
   if (entry.acao === "STATUS_ALTERADO")
     return `De ${String(detail.anterior ?? "—")} para ${String(detail.atual ?? "—")}`;
   if (entry.acao === "ASSINATURA_ATUALIZADA") {
@@ -68,11 +72,18 @@ function detailText(entry: AuditEntry): string {
   return entry.estabelecimento ? `Ação concluída em ${entry.estabelecimento.nome}` : "Ação concluída na plataforma";
 }
 
+function establishmentName(entry: AuditEntry): string {
+  if (entry.estabelecimento) return entry.estabelecimento.nome;
+  const name = safeDetail(entry.detalhe).nome;
+  return typeof name === "string" ? name : "Plataforma";
+}
+
 function AuditIcon({ action }: { action: string }) {
   if (action === "BANCO_PROVISIONADO") return <Database size={19} />;
   if (action === "ASSINATURA_ATUALIZADA") return <CircleDollarSign size={19} />;
   if (action === "TOKEN_IMPRESSAO_GERADO") return <ShieldCheck size={19} />;
   if (action.includes("DONO") || action.includes("SENHA")) return <UserRoundCog size={19} />;
+  if (action === "ESTABELECIMENTO_REMOVIDO") return <Trash2 size={19} />;
   if (action === "ESTABELECIMENTO_CRIADO") return <Building2 size={19} />;
   if (action === "STATUS_ALTERADO") return <Activity size={19} />;
   return <KeyRound size={19} />;
@@ -163,7 +174,7 @@ export function AuditHistory() {
                 </div>
                 <p>{detailText(entry)}</p>
                 <div className="audit-meta">
-                  <span>{entry.estabelecimento?.nome ?? "Plataforma"}</span>
+                  <span>{establishmentName(entry)}</span>
                   <span>{entry.usuarioCeo.nome}</span>
                   <span>{entry.usuarioCeo.email}</span>
                 </div>

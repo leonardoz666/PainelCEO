@@ -14,7 +14,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
       ...init.headers,
     },
   })
-  const payload = await response.json().catch(() => null) as { error?: string } | null
-  if (!response.ok) throw new ApiError(payload?.error || `Erro ${response.status}`, response.status)
+  const payload = await response.json().catch(() => null) as { error?: string; message?: string } | null
+  if (!response.ok) throw new ApiError(payload?.error || payload?.message || `Erro ${response.status}`, response.status)
   return payload as T
 }

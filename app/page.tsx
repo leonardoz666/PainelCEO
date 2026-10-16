@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -13,6 +13,7 @@ import {
   Database,
   ExternalLink,
   KeyRound,
+  LockKeyhole,
   LoaderCircle,
   LogOut,
   MonitorCheck,
@@ -23,6 +24,7 @@ import {
   Search,
   ShieldCheck,
   Store,
+  Trash2,
   TriangleAlert,
   Users,
 } from "lucide-react";
@@ -70,6 +72,10 @@ type Establishment = {
 function optionalNumber(form: FormData, name: string): number | null {
   const value = String(form.get(name) ?? "").trim();
   return value === "" ? null : Number(value);
+}
+
+function deletionConfirmation(slug: string): string {
+  return `EXCLUIR ${slug}`;
 }
 
 const STATUS_LABEL: Record<Status, string> = {
@@ -129,6 +135,10 @@ export default function DashboardPage() {
   const [brandingFor, setBrandingFor] = useState<Establishment | null>(null);
   const [printerToken, setPrinterToken] = useState<{ id: string; value: string } | null>(null);
   const [installationCode, setInstallationCode] = useState<{ id: string; value: string; establishmentUrl: string } | null>(null);
+  const [deleteFor, setDeleteFor] = useState<Establishment | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const [search, setSearch] = useState("");
 
   const operationalBase = useMemo(
@@ -388,6 +398,42 @@ export default function DashboardPage() {
     }
   }
 
+  function openDeleteDialog(item: Establishment) {
+    setEditingFor(null);
+    setBrandingFor(null);
+    setBillingFor(null);
+    setOwnerFor(null);
+    setDeleteConfirmation("");
+    setDeleteError("");
+    setDeleteFor(item);
+  }
+
+  async function deleteEstablishment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!deleteFor || deleteConfirmation !== deletionConfirmation(deleteFor.slug)) return;
+    setDeleting(true);
+    setDeleteError("");
+    const form = new FormData(event.currentTarget);
+    try {
+      await api(`/estabelecimentos/${deleteFor.id}`, {
+        method: "DELETE",
+        body: JSON.stringify({
+          senha: form.get("senha"),
+          confirmacao: deleteConfirmation,
+        }),
+      });
+      const removedName = deleteFor.nome;
+      setDeleteFor(null);
+      setDeleteConfirmation("");
+      setAnnouncement(`${removedName}, todos os dados do banco PostgreSQL e seus arquivos foram excluídos definitivamente.`);
+      await load();
+    } catch (reason) {
+      setDeleteError(reason instanceof Error ? reason.message : "Falha ao remover o estabelecimento");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="ceo-shell">
       <aside className="ceo-sidebar">
@@ -596,6 +642,15 @@ export default function DashboardPage() {
                           <Field name="databaseUrl" label="Nova conexão PostgreSQL" type="password" placeholder="Manter conexão atual" hint="Ao trocar o banco, o cliente volta para Em teste e precisa ser preparado novamente." />
                           <OwnerActions saving={saving} onCancel={() => setEditingFor(null)} label="Salvar alterações" />
                         </div>
+                        <div className="danger-zone">
+                          <div>
+                            <strong>Remover do ControlaÊ</strong>
+                            <p>Exclui permanentemente o cadastro, todas as tabelas e dados do banco PostgreSQL e os arquivos deste estabelecimento.</p>
+                          </div>
+                          <button type="button" className="danger-button" onClick={() => openDeleteDialog(item)}>
+                            <Trash2 size={18} /> Remover estabelecimento
+                          </button>
+                        </div>
                       </form>
                     )}
 
@@ -663,7 +718,100 @@ export default function DashboardPage() {
           </> : <AuditHistory />}
         </div>
       </main>
+      {deleteFor ? (
+        <DeleteEstablishmentDialog
+          item={deleteFor}
+          confirmation={deleteConfirmation}
+          deleting={deleting}
+          error={deleteError}
+          onConfirmationChange={setDeleteConfirmation}
+          onClose={() => { if (!deleting) { setDeleteFor(null); setDeleteError(""); } }}
+          onSubmit={deleteEstablishment}
+        />
+      ) : null}
     </div>
+  );
+}
+
+function DeleteEstablishmentDialog({
+  item,
+  confirmation,
+  deleting,
+  error,
+  onConfirmationChange,
+  onClose,
+  onSubmit,
+}: {
+  item: Establishment;
+  confirmation: string;
+  deleting: boolean;
+  error: string;
+  onConfirmationChange: (value: string) => void;
+  onClose: () => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const requiredConfirmation = deletionConfirmation(item.slug);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    dialog.showModal();
+    return () => dialog.close();
+  }, []);
+
+  return (
+    <dialog ref={dialogRef} className="delete-dialog" aria-labelledby="delete-dialog-title" onCancel={(event) => { event.preventDefault(); if (!deleting) onClose(); }}>
+      <form onSubmit={onSubmit} className="delete-dialog-card">
+        <div className="delete-dialog-icon"><Trash2 size={24} /></div>
+        <div>
+          <h2 id="delete-dialog-title">Excluir {item.nome} definitivamente?</h2>
+          <p className="delete-dialog-lead">Esta ação destrói os dados do estabelecimento e não pode ser desfeita.</p>
+        </div>
+
+        <div className="delete-impact" role="note">
+          <strong>O que acontece</strong>
+          <ul>
+            <li>O link <b>{item.slug}</b>, todos os logins e o agente de impressão deixam de funcionar.</li>
+            <li>Pedidos, produtos, usuários, relatórios, dados financeiros e biometrias são apagados do banco PostgreSQL.</li>
+            <li>As imagens enviadas, a assinatura e todas as configurações são removidas.</li>
+            <li>Não existe recuperação automática. Apenas o registro administrativo da exclusão permanece.</li>
+          </ul>
+        </div>
+
+        {error ? <div className="delete-dialog-error" role="alert"><TriangleAlert size={18} />{error}</div> : null}
+
+        <label className="field">
+          <span>Digite o link para confirmar</span>
+          <input
+            value={confirmation}
+            onChange={(event) => onConfirmationChange(event.target.value)}
+            placeholder={requiredConfirmation}
+            autoComplete="off"
+            spellCheck={false}
+            required
+            autoFocus
+          />
+          <small className="field-hint">Digite exatamente: <b>{requiredConfirmation}</b></small>
+        </label>
+
+        <label className="field">
+          <span>Senha do administrador do painel</span>
+          <span className="password-field">
+            <LockKeyhole size={18} aria-hidden="true" />
+            <input name="senha" type="password" minLength={8} maxLength={200} autoComplete="current-password" required />
+          </span>
+        </label>
+
+        <div className="delete-dialog-actions">
+          <button type="button" className="secondary-button" onClick={onClose} disabled={deleting}>Cancelar</button>
+          <button type="submit" className="danger-button danger-button--solid" disabled={deleting || confirmation !== requiredConfirmation}>
+            {deleting ? <LoaderCircle size={18} className="animate-spin" /> : <Trash2 size={18} />}
+            {deleting ? "Excluindo tudo..." : "Excluir tudo definitivamente"}
+          </button>
+        </div>
+      </form>
+    </dialog>
   );
 }
 

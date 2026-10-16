@@ -38,3 +38,7 @@ As conexões PostgreSQL cadastradas no painel nunca são devolvidas ao navegador
 6. Altere a situação para **Ativo**. O backend impede a ativação enquanto o banco e o Dono não estiverem prontos.
 
 Cada token de impressão pertence a um único estabelecimento e só é exibido no momento da geração.
+
+## Remoção de um estabelecimento
+
+A opção **Remover estabelecimento** fica na edição do cliente e exige a senha do administrador do painel e a frase `EXCLUIR <link>`. A remoção suspende o acesso, destrói o schema operacional do banco PostgreSQL, apaga os uploads identificados pelo link e, somente depois, remove o cadastro e a assinatura do plano de controle. A operação não possui recuperação automática. O histórico administrativo mantém apenas um registro da exclusão com o nome e o link removidos.
