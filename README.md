@@ -33,9 +33,8 @@ As conexões PostgreSQL cadastradas no painel nunca são devolvidas ao navegador
 1. Cadastre o estabelecimento com um banco PostgreSQL vazio ou já pertencente à plataforma.
 2. Use **Preparar banco**. Bancos existentes recebem um backup lógico antes das migrations.
 3. Crie o acesso de **Dono**.
-4. Cadastre a URL HTTPS exclusiva da API do estabelecimento.
-5. Gere **Ativar aplicativo** e informe a URL retornada e o código temporário no FrontendC daquele computador.
-6. Gere o **Token impressão** e informe o estabelecimento e o token no ControlaÊ Agent daquele cliente.
-7. Altere a situação para **Ativo**. O backend impede a ativação enquanto o banco e o Dono não estiverem prontos.
+4. Gere **Ativar aplicativo** e informe o link individual do estabelecimento e o código temporário no FrontendC daquele computador.
+5. Gere o **Token impressão** e informe o estabelecimento e o token no ControlaÊ Agent daquele cliente.
+6. Altere a situação para **Ativo**. O backend impede a ativação enquanto o banco e o Dono não estiverem prontos.
 
 Cada token de impressão pertence a um único estabelecimento e só é exibido no momento da geração.

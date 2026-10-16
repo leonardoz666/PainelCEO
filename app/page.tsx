@@ -11,6 +11,7 @@ import {
   Crown,
   History,
   Database,
+  ExternalLink,
   KeyRound,
   LoaderCircle,
   LogOut,
@@ -44,7 +45,6 @@ type Establishment = {
   documento: string | null;
   email: string | null;
   telefone: string | null;
-  apiUrl: string | null;
   garcomLatitude: number | null;
   garcomLongitude: number | null;
   garcomRaioMetros: number | null;
@@ -123,14 +123,19 @@ export default function DashboardPage() {
   const [editingFor, setEditingFor] = useState<Establishment | null>(null);
   const [brandingFor, setBrandingFor] = useState<Establishment | null>(null);
   const [printerToken, setPrinterToken] = useState<{ id: string; value: string } | null>(null);
-  const [installationCode, setInstallationCode] = useState<{ id: string; value: string; apiUrl: string } | null>(null);
+  const [installationCode, setInstallationCode] = useState<{ id: string; value: string; establishmentUrl: string } | null>(null);
   const [search, setSearch] = useState("");
+
+  const operationalBase = useMemo(
+    () => (process.env.NEXT_PUBLIC_OPERATIONAL_URL || "https://controlae.vercel.app").replace(/\/$/, ""),
+    [],
+  );
 
   const visibleItems = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("pt-BR");
     if (!query) return items;
     return items.filter((item) =>
-      [item.nome, item.slug, item.email, item.telefone, item.apiUrl]
+      [item.nome, item.slug, item.email, item.telefone]
         .filter(Boolean)
         .some((value) => String(value).toLocaleLowerCase("pt-BR").includes(query)),
     );
@@ -367,9 +372,10 @@ export default function DashboardPage() {
   async function generateInstallationCode(item: Establishment) {
     setError("");
     try {
-      const result = await api<{ code: string; apiUrl: string }>(`/estabelecimentos/${item.id}/aplicativo/codigo`, { method: "POST" });
-      setInstallationCode({ id: item.id, value: result.code, apiUrl: result.apiUrl });
-      const copied = await navigator.clipboard.writeText(`URL da API: ${result.apiUrl}\nCódigo de ativação: ${result.code}`).then(() => true).catch(() => false);
+      const result = await api<{ code: string }>(`/estabelecimentos/${item.id}/aplicativo/codigo`, { method: "POST" });
+      const establishmentUrl = `${operationalBase}/e/${item.slug}`;
+      setInstallationCode({ id: item.id, value: result.code, establishmentUrl });
+      const copied = await navigator.clipboard.writeText(`Link do estabelecimento: ${establishmentUrl}\nCódigo de ativação: ${result.code}`).then(() => true).catch(() => false);
       setAnnouncement(copied ? "Dados de instalação gerados e copiados." : "Dados de instalação gerados. Copie-os no painel.");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Falha ao gerar código de ativação");
@@ -447,7 +453,7 @@ export default function DashboardPage() {
               <div className="panel-heading">
                 <div>
                   <h2>Novo estabelecimento</h2>
-                  <p>A URL da API será gerada automaticamente pelo link do estabelecimento.</p>
+                  <p>O link individual será gerado automaticamente a partir do identificador abaixo.</p>
                 </div>
                 <button type="button" onClick={() => setShowCreate(false)} className="text-button">Fechar</button>
               </div>
@@ -508,10 +514,12 @@ export default function DashboardPage() {
                           <h3>{item.nome}</h3>
                           <span className={`status-pill ${STATUS_STYLE[item.status]}`}><span />{STATUS_LABEL[item.status]}</span>
                         </div>
-                        <span className="client-slug">{item.slug}</span>
+                        <a href={`${operationalBase}/e/${item.slug}`} target="_blank" rel="noreferrer" className="client-slug">
+                          {item.slug}<ExternalLink size={13} aria-hidden="true" />
+                        </a>
                         <div className="readiness-list">
                           <span className={item.bancoPronto ? "ready" : "waiting"}>{item.bancoPronto ? "Banco pronto" : "Banco pendente"}</span>
-                          <span className={item.apiUrl ? "ready" : "waiting"}>{item.apiUrl ? "API gerada" : "API pendente"}</span>
+                          <span className="ready">Link pronto</span>
                           <span className={item.donoPronto ? "ready" : "waiting"}>{item.donoPronto ? "Dono criado" : "Dono pendente"}</span>
                           <span className={item.impressaoConfigurada ? "protected" : "waiting"}><ShieldCheck size={13} />{item.impressaoConfigurada ? "Impressão protegida" : "Impressão pendente"}</span>
                         </div>
@@ -554,7 +562,7 @@ export default function DashboardPage() {
                       <button onClick={() => void generatePrinterToken(item)}>
                         <ShieldCheck size={20} /><span>Token impressão</span>
                       </button>
-                      <button onClick={() => void generateInstallationCode(item)} title={item.apiUrl || "A URL será gerada automaticamente"}>
+                      <button onClick={() => void generateInstallationCode(item)} title={`${operationalBase}/e/${item.slug}`}>
                         <MonitorCheck size={20} /><span>Ativar aplicativo</span>
                       </button>
                       <button className="access-button" onClick={() => { setOwnerFor((current) => current?.id === item.id ? null : item); setOwnerMode("create"); }}>
@@ -567,7 +575,7 @@ export default function DashboardPage() {
                         <div className="inline-form-heading">
                           <div>
                             <h4>Editar estabelecimento</h4>
-                            <p>A URL da API acompanha o link automaticamente. Deixe a conexão vazia para manter o banco atual.</p>
+                            <p>O link acompanha o identificador automaticamente. Deixe a conexão vazia para manter o banco atual.</p>
                           </div>
                           <button type="button" onClick={() => setEditingFor(null)} className="text-button">Fechar</button>
                         </div>
@@ -604,8 +612,8 @@ export default function DashboardPage() {
                     {installationCode?.id === item.id && (
                       <div className="token-banner">
                         <strong>Dados para ativar o aplicativo. O código é válido por 15 minutos.</strong>
-                        <span className="token-label">URL da API</span>
-                        <code>{installationCode.apiUrl}</code>
+                        <span className="token-label">Link do estabelecimento</span>
+                        <code>{installationCode.establishmentUrl}</code>
                         <span className="token-label">Código de ativação</span>
                         <code>{installationCode.value}</code>
                       </div>

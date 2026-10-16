@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const FALLBACK_BACKEND = 'https://controlae-backend.onrender.com'
+const FALLBACK_BACKEND = 'https://backendrei.onrender.com'
 const HOP_BY_HOP = ['connection', 'content-length', 'host', 'transfer-encoding']
 
 async function handler(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
