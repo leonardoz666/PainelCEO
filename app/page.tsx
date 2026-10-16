@@ -8,14 +8,13 @@ import {
   Check,
   ChevronDown,
   CircleDollarSign,
-  Clipboard,
   Crown,
-  ExternalLink,
   History,
   Database,
   KeyRound,
   LoaderCircle,
   LogOut,
+  MonitorCheck,
   Pencil,
   Palette,
   Plus,
@@ -117,23 +116,14 @@ export default function DashboardPage() {
   const [saving, setSaving] = useState(false);
   const [ownerFor, setOwnerFor] = useState<Establishment | null>(null);
   const [ownerMode, setOwnerMode] = useState<"create" | "reset">("create");
-  const [copied, setCopied] = useState("");
   const [announcement, setAnnouncement] = useState("");
   const [provisioning, setProvisioning] = useState("");
   const [billingFor, setBillingFor] = useState<Establishment | null>(null);
   const [editingFor, setEditingFor] = useState<Establishment | null>(null);
   const [brandingFor, setBrandingFor] = useState<Establishment | null>(null);
   const [printerToken, setPrinterToken] = useState<{ id: string; value: string } | null>(null);
+  const [installationCode, setInstallationCode] = useState<{ id: string; value: string; apiUrl: string } | null>(null);
   const [search, setSearch] = useState("");
-
-  const operationalBase = useMemo(
-    () =>
-      (
-        process.env.NEXT_PUBLIC_OPERATIONAL_URL ||
-        "https://controlae.vercel.app"
-      ).replace(/\/$/, ""),
-    [],
-  );
 
   const visibleItems = useMemo(() => {
     const query = search.trim().toLocaleLowerCase("pt-BR");
@@ -292,19 +282,6 @@ export default function DashboardPage() {
     }
   }
 
-  async function copyLink(item: Establishment) {
-    const link = `${operationalBase}/e/${item.slug}`;
-    try {
-      await navigator.clipboard.writeText(link);
-      setCopied(item.id);
-      setAnnouncement(`Link de ${item.nome} copiado.`);
-      window.setTimeout(() => setCopied(""), 1800);
-    } catch {
-      setError("Não foi possível copiar o link.");
-      setAnnouncement("Falha ao copiar o link.");
-    }
-  }
-
   async function provisionDatabase(item: Establishment) {
     setProvisioning(item.id);
     setError("");
@@ -383,6 +360,19 @@ export default function DashboardPage() {
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Falha ao gerar token de impressão");
       setAnnouncement("Falha ao gerar o token de impressão.");
+    }
+  }
+
+  async function generateInstallationCode(item: Establishment) {
+    setError("");
+    try {
+      const result = await api<{ code: string; apiUrl: string }>(`/estabelecimentos/${item.id}/aplicativo/codigo`, { method: "POST" });
+      setInstallationCode({ id: item.id, value: result.code, apiUrl: result.apiUrl });
+      const copied = await navigator.clipboard.writeText(`URL da API: ${result.apiUrl}\nCódigo de ativação: ${result.code}`).then(() => true).catch(() => false);
+      setAnnouncement(copied ? "Dados de instalação gerados e copiados." : "Dados de instalação gerados. Copie-os no painel.");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Falha ao gerar código de ativação");
+      setAnnouncement("Falha ao gerar o código de ativação.");
     }
   }
 
@@ -517,9 +507,7 @@ export default function DashboardPage() {
                           <h3>{item.nome}</h3>
                           <span className={`status-pill ${STATUS_STYLE[item.status]}`}><span />{STATUS_LABEL[item.status]}</span>
                         </div>
-                        <a href={`${operationalBase}/e/${item.slug}`} target="_blank" rel="noreferrer" className="client-slug">
-                          {item.slug}<ExternalLink size={13} />
-                        </a>
+                        <span className="client-slug">{item.slug}</span>
                         <div className="readiness-list">
                           <span className={item.bancoPronto ? "ready" : "waiting"}>{item.bancoPronto ? "Banco pronto" : "Banco pendente"}</span>
                           <span className={item.donoPronto ? "ready" : "waiting"}>{item.donoPronto ? "Dono criado" : "Dono pendente"}</span>
@@ -564,8 +552,8 @@ export default function DashboardPage() {
                       <button onClick={() => void generatePrinterToken(item)}>
                         <ShieldCheck size={20} /><span>Token impressão</span>
                       </button>
-                      <button onClick={() => void copyLink(item)}>
-                        {copied === item.id ? <Check size={20} /> : <Clipboard size={20} />}<span>{copied === item.id ? "Copiado" : "Copiar link"}</span>
+                      <button onClick={() => void generateInstallationCode(item)}>
+                        <MonitorCheck size={20} /><span>Ativar aplicativo</span>
                       </button>
                       <button className="access-button" onClick={() => { setOwnerFor((current) => current?.id === item.id ? null : item); setOwnerMode("create"); }}>
                         <KeyRound size={19} /><span>Acesso</span><ArrowRight size={16} aria-hidden />
@@ -608,6 +596,16 @@ export default function DashboardPage() {
                       <div className="token-banner">
                         <strong>Copie agora: este token será mostrado somente desta vez.</strong>
                         <code>{printerToken.value}</code>
+                      </div>
+                    )}
+
+                    {installationCode?.id === item.id && (
+                      <div className="token-banner">
+                        <strong>Dados para ativar o aplicativo. O código é válido por 15 minutos.</strong>
+                        <span className="token-label">URL da API</span>
+                        <code>{installationCode.apiUrl}</code>
+                        <span className="token-label">Código de ativação</span>
+                        <code>{installationCode.value}</code>
                       </div>
                     )}
 
