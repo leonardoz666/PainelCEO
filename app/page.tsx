@@ -45,6 +45,9 @@ type Establishment = {
   documento: string | null;
   email: string | null;
   telefone: string | null;
+  garcomLatitude: number | null;
+  garcomLongitude: number | null;
+  garcomRaioMetros: number | null;
   status: Status;
   bancoConfigurado: boolean;
   bancoPronto: boolean;
@@ -58,6 +61,11 @@ type Establishment = {
   } | null;
   plano: { nome: string } | null;
 };
+
+function optionalNumber(form: FormData, name: string): number | null {
+  const value = String(form.get(name) ?? "").trim();
+  return value === "" ? null : Number(value);
+}
 
 const STATUS_LABEL: Record<Status, string> = {
   TESTE: "Em teste",
@@ -122,7 +130,7 @@ export default function DashboardPage() {
     () =>
       (
         process.env.NEXT_PUBLIC_OPERATIONAL_URL ||
-        "https://frontendrei.vercel.app"
+        "https://controlae.vercel.app"
       ).replace(/\/$/, ""),
     [],
   );
@@ -182,6 +190,9 @@ export default function DashboardPage() {
           documento: form.get("documento") || null,
           email: form.get("email") || null,
           telefone: form.get("telefone") || null,
+          garcomLatitude: optionalNumber(form, "garcomLatitude"),
+          garcomLongitude: optionalNumber(form, "garcomLongitude"),
+          garcomRaioMetros: optionalNumber(form, "garcomRaioMetros"),
           databaseUrl: form.get("databaseUrl"),
           valorMensal: Number(form.get("valorMensal") || 0),
           proximoVencimento: form.get("proximoVencimento") || null,
@@ -345,6 +356,9 @@ export default function DashboardPage() {
           documento: form.get("documento") || null,
           email: form.get("email") || null,
           telefone: form.get("telefone") || null,
+          garcomLatitude: optionalNumber(form, "garcomLatitude"),
+          garcomLongitude: optionalNumber(form, "garcomLongitude"),
+          garcomRaioMetros: optionalNumber(form, "garcomRaioMetros"),
           ...(databaseUrl ? { databaseUrl } : {}),
         }),
       });
@@ -448,10 +462,13 @@ export default function DashboardPage() {
               </div>
               <form onSubmit={createEstablishment} className="form-grid">
                 <Field name="nome" label="Nome" required />
-                <Field name="slug" label="Link" placeholder="rei-da-carne-de-sol" required />
+                <Field name="slug" label="Link" placeholder="restaurante-exemplo" required />
                 <Field name="documento" label="CNPJ ou documento" />
                 <Field name="email" label="E-mail comercial" type="email" />
                 <Field name="telefone" label="Telefone" />
+                <Field name="garcomLatitude" label="Latitude para login de garçons" type="number" placeholder="-12.000000" />
+                <Field name="garcomLongitude" label="Longitude para login de garçons" type="number" placeholder="-38.000000" />
+                <Field name="garcomRaioMetros" label="Raio permitido (metros)" type="number" placeholder="50" hint="Deixe os três campos vazios para não restringir o login por localização." />
                 <Field name="valorMensal" label="Mensalidade" type="number" placeholder="0,00" />
                 <Field name="proximoVencimento" label="Próximo vencimento" type="date" />
                 <Field name="databaseUrl" label="Conexão PostgreSQL" type="password" required />
@@ -570,6 +587,9 @@ export default function DashboardPage() {
                           <Field name="documento" label="CNPJ ou documento" defaultValue={item.documento ?? ""} />
                           <Field name="email" label="E-mail comercial" type="email" defaultValue={item.email ?? ""} />
                           <Field name="telefone" label="Telefone" defaultValue={item.telefone ?? ""} />
+                          <Field name="garcomLatitude" label="Latitude para login de garçons" type="number" defaultValue={item.garcomLatitude == null ? "" : String(item.garcomLatitude)} />
+                          <Field name="garcomLongitude" label="Longitude para login de garçons" type="number" defaultValue={item.garcomLongitude == null ? "" : String(item.garcomLongitude)} />
+                          <Field name="garcomRaioMetros" label="Raio permitido (metros)" type="number" defaultValue={item.garcomRaioMetros == null ? "" : String(item.garcomRaioMetros)} hint="Deixe os três campos vazios para não restringir o login por localização." />
                           <Field name="databaseUrl" label="Nova conexão PostgreSQL" type="password" placeholder="Manter conexão atual" hint="Ao trocar o banco, o cliente volta para Em teste e precisa ser preparado novamente." />
                           <OwnerActions saving={saving} onCancel={() => setEditingFor(null)} label="Salvar alterações" />
                         </div>

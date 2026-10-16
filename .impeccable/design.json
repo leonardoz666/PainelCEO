@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-10-15T12:00:00-03:00",
-  "title": "Design System: Rei Plataforma — Painel CEO",
+  "title": "Design System: ControlaÊ — Painel CEO",
   "extensions": {
     "colorMeta": {
       "rail-deep": { "role": "primary", "displayName": "Violeta do Rail Profundo", "canonical": "#24135d", "tonalRamp": ["oklch(15% 0.08 292)", "oklch(25% 0.11 292)", "oklch(36% 0.13 292)", "oklch(48% 0.14 292)", "oklch(60% 0.12 292)", "oklch(72% 0.09 292)", "oklch(84% 0.05 292)", "oklch(95% 0.02 292)"] },
@@ -70,7 +70,7 @@
       "kind": "input",
       "refersTo": "field",
       "description": "Entrada administrativa clara, com placeholder legível e foco duplo.",
-      "html": "<label class=\"ds-field\"><span>Nome</span><input placeholder=\"Rei da Carne de Sol\" /></label>",
+      "html": "<label class=\"ds-field\"><span>Nome</span><input placeholder=\"Restaurante Exemplo\" /></label>",
       "css": ".ds-field{display:block;color:#303657;font-family:'Manrope Variable','Segoe UI',sans-serif;font-size:13px;font-weight:730}.ds-field input{width:100%;height:45px;margin-top:7px;padding:0 13px;border:1px solid #dbdded;border-radius:11px;color:#171a3a;background:rgba(255,255,255,.92);font:inherit;font-weight:400;box-shadow:inset 0 1px 1px rgba(34,29,73,.02);transition:border .16s ease,box-shadow .16s ease}.ds-field input::placeholder{color:#686e8a}.ds-field input:hover{border-color:#c8c9df}.ds-field input:focus-visible{border-color:#8d6ee9;box-shadow:0 0 0 4px rgba(117,56,244,.09);outline:3px solid #6c36df;outline-offset:3px}"
     },
     {
@@ -126,7 +126,7 @@
       { "name": "The Radius Ladder Rule", "body": "Controle, cartão e painel devem subir de forma reconhecível na escala de raio; o tamanho do contêiner determina a curvatura.", "section": "shapes" }
     ],
     "dos": [
-      "Do mantenha o rail violeta e a coroa laranja como âncoras reconhecíveis da Rei Plataforma.",
+      "Do mantenha o rail violeta e a coroa laranja como âncoras reconhecíveis do ControlaÊ.",
       "Do agrupe ações por estabelecimento e preserve separadores claros entre identidade, cobrança e operação.",
       "Do use superfícies translúcidas sobre o canvas lilás somente quando texto e bordas mantiverem contraste.",
       "Do apresente estados críticos com texto, cor e, quando útil, ícone.",
