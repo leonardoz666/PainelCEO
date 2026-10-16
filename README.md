@@ -6,7 +6,7 @@ Frontend separado para administrar os estabelecimentos clientes da plataforma.
 
 Copie `.env.example` para `.env.local` e configure:
 
-- `BACKEND_URL`: endereço interno/público do `Backendrei` usado pelo proxy do servidor;
+- `BACKEND_URL`: endereço interno/público do `BackendC` usado pelo proxy do servidor;
 - `NEXT_PUBLIC_OPERATIONAL_URL`: endereço do frontend operacional usado nos links dos restaurantes.
 
 ## Desenvolvimento
