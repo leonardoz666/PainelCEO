@@ -27,6 +27,11 @@ import {
   Users,
 } from "lucide-react";
 import { api, ApiError } from "@/app/lib/api";
+import {
+  establishmentInstallationUrl,
+  establishmentLoginUrl,
+  normalizeOperationalBaseUrl,
+} from "@/app/lib/operational-url";
 import { AuditHistory } from "@/app/components/AuditHistory";
 import { BrandingEditor } from "@/app/components/BrandingEditor";
 
@@ -127,7 +132,7 @@ export default function DashboardPage() {
   const [search, setSearch] = useState("");
 
   const operationalBase = useMemo(
-    () => (process.env.NEXT_PUBLIC_OPERATIONAL_URL || "https://controlae.vercel.app").replace(/\/$/, ""),
+    () => normalizeOperationalBaseUrl(process.env.NEXT_PUBLIC_OPERATIONAL_URL),
     [],
   );
 
@@ -373,7 +378,7 @@ export default function DashboardPage() {
     setError("");
     try {
       const result = await api<{ code: string }>(`/estabelecimentos/${item.id}/aplicativo/codigo`, { method: "POST" });
-      const establishmentUrl = `${operationalBase}/e/${item.slug}`;
+      const establishmentUrl = establishmentInstallationUrl(operationalBase, item.slug);
       setInstallationCode({ id: item.id, value: result.code, establishmentUrl });
       const copied = await navigator.clipboard.writeText(`Link do estabelecimento: ${establishmentUrl}\nCódigo de ativação: ${result.code}`).then(() => true).catch(() => false);
       setAnnouncement(copied ? "Dados de instalação gerados e copiados." : "Dados de instalação gerados. Copie-os no painel.");
@@ -514,7 +519,7 @@ export default function DashboardPage() {
                           <h3>{item.nome}</h3>
                           <span className={`status-pill ${STATUS_STYLE[item.status]}`}><span />{STATUS_LABEL[item.status]}</span>
                         </div>
-                        <a href={`${operationalBase}/e/${item.slug}`} target="_blank" rel="noreferrer" className="client-slug">
+                        <a href={establishmentLoginUrl(operationalBase, item.slug)} target="_blank" rel="noreferrer" className="client-slug">
                           {item.slug}<ExternalLink size={13} aria-hidden="true" />
                         </a>
                         <div className="readiness-list">
@@ -562,7 +567,7 @@ export default function DashboardPage() {
                       <button onClick={() => void generatePrinterToken(item)}>
                         <ShieldCheck size={20} /><span>Token impressão</span>
                       </button>
-                      <button onClick={() => void generateInstallationCode(item)} title={`${operationalBase}/e/${item.slug}`}>
+                      <button onClick={() => void generateInstallationCode(item)} title={establishmentInstallationUrl(operationalBase, item.slug)}>
                         <MonitorCheck size={20} /><span>Ativar aplicativo</span>
                       </button>
                       <button className="access-button" onClick={() => { setOwnerFor((current) => current?.id === item.id ? null : item); setOwnerMode("create"); }}>
