@@ -41,4 +41,6 @@ Cada token de impressão pertence a um único estabelecimento e só é exibido n
 
 ## Remoção de um estabelecimento
 
-A opção **Remover estabelecimento** fica na edição do cliente e exige a senha do administrador do painel e a frase `EXCLUIR <link>`. A remoção suspende o acesso, destrói o schema operacional do banco PostgreSQL, apaga os uploads identificados pelo link e, somente depois, remove o cadastro e a assinatura do plano de controle. A operação não possui recuperação automática. O histórico administrativo mantém apenas um registro da exclusão com o nome e o link removidos.
+A opção **Remover estabelecimento** fica na edição do cliente e exige a senha do administrador do painel e a frase `EXCLUIR <link>`. A remoção suspende o acesso e cria um backup lógico completo em `TENANT_BACKUP_DIR`. O backend grava o arquivo de forma atômica, relê e valida a cópia e só então destrói o schema operacional do PostgreSQL, apaga os uploads identificados pelo link e remove o cadastro e a assinatura do plano de controle. Se o backup falhar, a destruição não começa.
+
+Os backups contêm dados pessoais e hashes de senha: mantenha `TENANT_BACKUP_DIR` fora do diretório público, em armazenamento persistente e criptografado, com acesso restrito. O histórico administrativo registra o nome do arquivo, a quantidade de tabelas e o tamanho. A retenção e a eliminação segura seguem a política operacional do responsável pelo ambiente; a restauração é manual para um banco PostgreSQL isolado e deve ser validada antes de reativar o estabelecimento.

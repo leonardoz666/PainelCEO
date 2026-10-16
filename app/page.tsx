@@ -415,7 +415,7 @@ export default function DashboardPage() {
     setDeleteError("");
     const form = new FormData(event.currentTarget);
     try {
-      await api(`/estabelecimentos/${deleteFor.id}`, {
+      const result = await api<{ backupFile: string }>(`/estabelecimentos/${deleteFor.id}`, {
         method: "DELETE",
         body: JSON.stringify({
           senha: form.get("senha"),
@@ -425,7 +425,7 @@ export default function DashboardPage() {
       const removedName = deleteFor.nome;
       setDeleteFor(null);
       setDeleteConfirmation("");
-      setAnnouncement(`${removedName}, todos os dados do banco PostgreSQL e seus arquivos foram excluídos definitivamente.`);
+      setAnnouncement(`${removedName} foi excluído após a criação do backup lógico ${result.backupFile}.`);
       await load();
     } catch (reason) {
       setDeleteError(reason instanceof Error ? reason.message : "Falha ao remover o estabelecimento");

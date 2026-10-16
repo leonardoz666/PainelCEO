@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Trash2,
   UserRoundCog,
+  type LucideIcon,
 } from "lucide-react";
 import { api } from "@/app/lib/api";
 
@@ -31,22 +32,42 @@ type AuditResponse = {
   pagination: { page: number; limit: number; total: number; pages: number };
 };
 
-const ACTIONS = [
-  ["", "Todas as ações"],
-  ["ESTABELECIMENTO_CRIADO", "Estabelecimento criado"],
-  ["ESTABELECIMENTO_ATUALIZADO", "Estabelecimento atualizado"],
-  ["ESTABELECIMENTO_REMOVIDO", "Estabelecimento removido"],
-  ["BANCO_PROVISIONADO", "Banco atualizado"],
-  ["STATUS_ALTERADO", "Status alterado"],
-  ["ASSINATURA_ATUALIZADA", "Mensalidade atualizada"],
-  ["TOKEN_IMPRESSAO_GERADO", "Token de impressão gerado"],
-  ["DONO_CRIADO", "Acesso do dono criado"],
-  ["DONO_RECONCILIADO", "Acesso do dono vinculado"],
-  ["DONO_RECONFIGURADO", "Acesso do dono protegido e atualizado"],
-  ["SENHA_DONO_REDEFINIDA", "Senha do dono redefinida"],
-] as const;
+type AuditActionDefinition = {
+  label: string;
+  icon: LucideIcon;
+  detail?: (detail: Record<string, unknown>) => string;
+};
 
-const ACTION_LABEL = Object.fromEntries(ACTIONS.slice(1)) as Record<string, string>;
+const ACTION_DEFINITIONS: Record<string, AuditActionDefinition> = {
+  ESTABELECIMENTO_CRIADO: { label: "Estabelecimento criado", icon: Building2 },
+  ESTABELECIMENTO_ATUALIZADO: { label: "Estabelecimento atualizado", icon: KeyRound },
+  ESTABELECIMENTO_REMOVIDO: {
+    label: "Estabelecimento removido",
+    icon: Trash2,
+    detail: (detail) => `${String(detail.nome ?? "Estabelecimento")} (${String(detail.slug ?? "link indisponível")}) foi excluído após a criação do backup lógico ${String(detail.backupArquivo ?? "registrado")}.`,
+  },
+  BANCO_PROVISIONADO: { label: "Banco atualizado", icon: Database },
+  STATUS_ALTERADO: {
+    label: "Status alterado",
+    icon: Activity,
+    detail: (detail) => `De ${String(detail.anterior ?? "—")} para ${String(detail.atual ?? "—")}`,
+  },
+  ASSINATURA_ATUALIZADA: {
+    label: "Mensalidade atualizada",
+    icon: CircleDollarSign,
+    detail: (detail) => `Novo valor: ${Number(detail.valorMensal ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}`,
+  },
+  TOKEN_IMPRESSAO_GERADO: { label: "Token de impressão gerado", icon: ShieldCheck },
+  DONO_CRIADO: { label: "Acesso do dono criado", icon: UserRoundCog },
+  DONO_RECONCILIADO: { label: "Acesso do dono vinculado", icon: UserRoundCog },
+  DONO_RECONFIGURADO: { label: "Acesso do dono protegido e atualizado", icon: UserRoundCog },
+  SENHA_DONO_REDEFINIDA: { label: "Senha do dono redefinida", icon: UserRoundCog },
+};
+
+const ACTIONS = [
+  { value: "", label: "Todas as ações" },
+  ...Object.entries(ACTION_DEFINITIONS).map(([value, definition]) => ({ value, label: definition.label })),
+];
 
 function safeDetail(value: string | null): Record<string, unknown> {
   if (!value) return {};
@@ -60,14 +81,8 @@ function safeDetail(value: string | null): Record<string, unknown> {
 
 function detailText(entry: AuditEntry): string {
   const detail = safeDetail(entry.detalhe);
-  if (entry.acao === "ESTABELECIMENTO_REMOVIDO")
-    return `${String(detail.nome ?? "Estabelecimento")} (${String(detail.slug ?? "link indisponível")}) foi excluído com os dados do banco e os arquivos operacionais.`;
-  if (entry.acao === "STATUS_ALTERADO")
-    return `De ${String(detail.anterior ?? "—")} para ${String(detail.atual ?? "—")}`;
-  if (entry.acao === "ASSINATURA_ATUALIZADA") {
-    const value = Number(detail.valorMensal ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-    return `Novo valor: ${value}`;
-  }
+  const formatter = ACTION_DEFINITIONS[entry.acao]?.detail;
+  if (formatter) return formatter(detail);
   if (typeof detail.login === "string") return `Login: ${detail.login}`;
   return entry.estabelecimento ? `Ação concluída em ${entry.estabelecimento.nome}` : "Ação concluída na plataforma";
 }
@@ -79,14 +94,8 @@ function establishmentName(entry: AuditEntry): string {
 }
 
 function AuditIcon({ action }: { action: string }) {
-  if (action === "BANCO_PROVISIONADO") return <Database size={19} />;
-  if (action === "ASSINATURA_ATUALIZADA") return <CircleDollarSign size={19} />;
-  if (action === "TOKEN_IMPRESSAO_GERADO") return <ShieldCheck size={19} />;
-  if (action.includes("DONO") || action.includes("SENHA")) return <UserRoundCog size={19} />;
-  if (action === "ESTABELECIMENTO_REMOVIDO") return <Trash2 size={19} />;
-  if (action === "ESTABELECIMENTO_CRIADO") return <Building2 size={19} />;
-  if (action === "STATUS_ALTERADO") return <Activity size={19} />;
-  return <KeyRound size={19} />;
+  const Icon = ACTION_DEFINITIONS[action]?.icon ?? KeyRound;
+  return <Icon size={19} />;
 }
 
 export function AuditHistory() {
@@ -141,7 +150,7 @@ export function AuditHistory() {
           <label className="audit-filter">
             <span className="sr-only">Filtrar por ação</span>
             <select value={action} onChange={(event) => { setAction(event.target.value); setPage(1); }}>
-              {ACTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              {ACTIONS.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
             </select>
           </label>
           <button type="button" onClick={() => void load()} disabled={loading} className="refresh-button" aria-label="Atualizar histórico">
@@ -169,7 +178,7 @@ export function AuditHistory() {
               <span className="audit-icon"><AuditIcon action={entry.acao} /></span>
               <div className="audit-copy">
                 <div className="audit-title-line">
-                  <strong>{ACTION_LABEL[entry.acao] ?? entry.acao.replaceAll("_", " ")}</strong>
+                  <strong>{ACTION_DEFINITIONS[entry.acao]?.label ?? entry.acao.replaceAll("_", " ")}</strong>
                   <time dateTime={entry.criadoEm}>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(entry.criadoEm))}</time>
                 </div>
                 <p>{detailText(entry)}</p>
