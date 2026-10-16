@@ -44,6 +44,7 @@ type Establishment = {
   documento: string | null;
   email: string | null;
   telefone: string | null;
+  apiUrl: string | null;
   garcomLatitude: number | null;
   garcomLongitude: number | null;
   garcomRaioMetros: number | null;
@@ -129,7 +130,7 @@ export default function DashboardPage() {
     const query = search.trim().toLocaleLowerCase("pt-BR");
     if (!query) return items;
     return items.filter((item) =>
-      [item.nome, item.slug, item.email, item.telefone]
+      [item.nome, item.slug, item.email, item.telefone, item.apiUrl]
         .filter(Boolean)
         .some((value) => String(value).toLocaleLowerCase("pt-BR").includes(query)),
     );
@@ -180,6 +181,7 @@ export default function DashboardPage() {
           documento: form.get("documento") || null,
           email: form.get("email") || null,
           telefone: form.get("telefone") || null,
+          apiUrl: form.get("apiUrl"),
           garcomLatitude: optionalNumber(form, "garcomLatitude"),
           garcomLongitude: optionalNumber(form, "garcomLongitude"),
           garcomRaioMetros: optionalNumber(form, "garcomRaioMetros"),
@@ -333,6 +335,7 @@ export default function DashboardPage() {
           documento: form.get("documento") || null,
           email: form.get("email") || null,
           telefone: form.get("telefone") || null,
+          apiUrl: form.get("apiUrl"),
           garcomLatitude: optionalNumber(form, "garcomLatitude"),
           garcomLongitude: optionalNumber(form, "garcomLongitude"),
           garcomRaioMetros: optionalNumber(form, "garcomRaioMetros"),
@@ -456,6 +459,7 @@ export default function DashboardPage() {
                 <Field name="documento" label="CNPJ ou documento" />
                 <Field name="email" label="E-mail comercial" type="email" />
                 <Field name="telefone" label="Telefone" />
+                <Field name="apiUrl" label="URL da API" type="url" placeholder="https://api.restaurante.com.br" hint="Endereço exclusivo usado pelos computadores deste estabelecimento." required />
                 <Field name="garcomLatitude" label="Latitude para login de garçons" type="number" placeholder="-12.000000" />
                 <Field name="garcomLongitude" label="Longitude para login de garçons" type="number" placeholder="-38.000000" />
                 <Field name="garcomRaioMetros" label="Raio permitido (metros)" type="number" placeholder="50" hint="Deixe os três campos vazios para não restringir o login por localização." />
@@ -510,6 +514,7 @@ export default function DashboardPage() {
                         <span className="client-slug">{item.slug}</span>
                         <div className="readiness-list">
                           <span className={item.bancoPronto ? "ready" : "waiting"}>{item.bancoPronto ? "Banco pronto" : "Banco pendente"}</span>
+                          <span className={item.apiUrl ? "ready" : "waiting"}>{item.apiUrl ? "API configurada" : "API pendente"}</span>
                           <span className={item.donoPronto ? "ready" : "waiting"}>{item.donoPronto ? "Dono criado" : "Dono pendente"}</span>
                           <span className={item.impressaoConfigurada ? "protected" : "waiting"}><ShieldCheck size={13} />{item.impressaoConfigurada ? "Impressão protegida" : "Impressão pendente"}</span>
                         </div>
@@ -552,8 +557,8 @@ export default function DashboardPage() {
                       <button onClick={() => void generatePrinterToken(item)}>
                         <ShieldCheck size={20} /><span>Token impressão</span>
                       </button>
-                      <button onClick={() => void generateInstallationCode(item)}>
-                        <MonitorCheck size={20} /><span>Ativar aplicativo</span>
+                      <button onClick={() => item.apiUrl ? void generateInstallationCode(item) : setEditingFor(item)} title={item.apiUrl || "Cadastre a URL da API"}>
+                        <MonitorCheck size={20} /><span>{item.apiUrl ? "Ativar aplicativo" : "Configurar API"}</span>
                       </button>
                       <button className="access-button" onClick={() => { setOwnerFor((current) => current?.id === item.id ? null : item); setOwnerMode("create"); }}>
                         <KeyRound size={19} /><span>Acesso</span><ArrowRight size={16} aria-hidden />
@@ -575,6 +580,7 @@ export default function DashboardPage() {
                           <Field name="documento" label="CNPJ ou documento" defaultValue={item.documento ?? ""} />
                           <Field name="email" label="E-mail comercial" type="email" defaultValue={item.email ?? ""} />
                           <Field name="telefone" label="Telefone" defaultValue={item.telefone ?? ""} />
+                          <Field name="apiUrl" label="URL da API" type="url" defaultValue={item.apiUrl ?? ""} placeholder="https://api.restaurante.com.br" hint="Informe somente a origem HTTPS, sem caminhos ou parâmetros." required />
                           <Field name="garcomLatitude" label="Latitude para login de garçons" type="number" defaultValue={item.garcomLatitude == null ? "" : String(item.garcomLatitude)} />
                           <Field name="garcomLongitude" label="Longitude para login de garçons" type="number" defaultValue={item.garcomLongitude == null ? "" : String(item.garcomLongitude)} />
                           <Field name="garcomRaioMetros" label="Raio permitido (metros)" type="number" defaultValue={item.garcomRaioMetros == null ? "" : String(item.garcomRaioMetros)} hint="Deixe os três campos vazios para não restringir o login por localização." />
