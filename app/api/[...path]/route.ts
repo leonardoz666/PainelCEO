@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { BackendConfigurationError, configuredBackendUrl, fetchBackend } from '../../lib/backend-connection'
 
-const FALLBACK_BACKEND = 'https://backendrei.onrender.com'
 const HOP_BY_HOP = ['connection', 'content-length', 'host', 'transfer-encoding']
 
 async function handler(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   try {
     const { path } = await context.params
-    const base = (process.env.BACKEND_URL || FALLBACK_BACKEND).replace(/\/$/, '')
+    const base = configuredBackendUrl()
     const incoming = new URL(request.url)
-    const target = new URL(path.join('/'), `${base}/`)
+    const target = new URL(path.join('/'), base)
     target.search = incoming.search
     const headers = new Headers(request.headers)
     HOP_BY_HOP.forEach(name => headers.delete(name))
     const method = request.method.toUpperCase()
-    const response = await fetch(target, {
+    const response = await fetchBackend(target, {
       method,
       headers,
       body: method === 'GET' || method === 'HEAD' ? undefined : await request.arrayBuffer(),
@@ -26,7 +26,14 @@ async function handler(request: NextRequest, context: { params: Promise<{ path: 
     responseHeaders.delete('transfer-encoding')
     return new Response(response.body, { status: response.status, headers: responseHeaders })
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Backend indisponível' }, { status: 502 })
+    if (error instanceof BackendConfigurationError) {
+      return NextResponse.json({ error: error.message }, { status: 503 })
+    }
+    const timedOut = error instanceof Error && error.name === 'AbortError'
+    return NextResponse.json(
+      { error: timedOut ? 'O backend não respondeu a tempo' : 'Backend indisponível' },
+      { status: timedOut ? 504 : 502 },
+    )
   }
 }
 
