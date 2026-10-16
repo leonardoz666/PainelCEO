@@ -34,7 +34,7 @@ export default function LoginPage() {
   return (
     <main className="grid min-h-screen lg:grid-cols-[minmax(0,1fr)_520px]">
       <section className="hidden bg-slate-950 p-12 text-white lg:flex lg:flex-col lg:justify-between">
-        <div className="flex items-center gap-3 text-lg font-bold"><Building2 className="text-orange-500" /> Rei Plataforma</div>
+        <div className="flex items-center gap-3 text-lg font-bold"><Building2 className="text-orange-500" /> ControlaÊ</div>
         <div className="max-w-2xl">
           <h1 className="max-w-xl text-5xl font-bold leading-[1.05] tracking-[-0.04em]">Todos os estabelecimentos sob o seu controle.</h1>
           <p className="mt-6 max-w-lg text-lg leading-8 text-slate-300">Administre acessos, assinaturas e disponibilidade sem entrar na operação dos restaurantes.</p>

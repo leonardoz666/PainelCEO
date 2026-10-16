@@ -8,7 +8,7 @@ web
 
 ## Users
 
-O usuário principal é o CEO da plataforma Rei, que administra estabelecimentos clientes, seus acessos e a disponibilidade do serviço.
+O usuário principal é o CEO da plataforma ControlaÊ, que administra estabelecimentos clientes, seus acessos e a disponibilidade do serviço.
 
 ## Product Purpose
 
@@ -35,7 +35,7 @@ O painel é usado em desktop para acompanhar a carteira de clientes e executar a
 
 ## Brand Commitments
 
-O produto se chama **Rei Plataforma** e esta superfície é identificada como **Painel CEO**. A referência visual fornecida em 15/10/2026 é vinculante para este redesenho.
+O produto se chama **ControlaÊ** e esta superfície é identificada como **Painel CEO**. A referência visual fornecida em 15/10/2026 é vinculante para este redesenho.
 
 ## Evidence on Hand
 

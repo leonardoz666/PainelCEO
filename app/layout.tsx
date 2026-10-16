@@ -3,8 +3,8 @@ import '@fontsource-variable/manrope'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Painel CEO | Rei',
-  description: 'Controle global dos estabelecimentos da plataforma Rei',
+  title: 'Painel CEO | ControlaÊ',
+  description: 'Controle global dos estabelecimentos na plataforma ControlaÊ',
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -1,5 +1,5 @@
 ---
-name: Rei Plataforma — Painel CEO
+name: ControlaÊ — Painel CEO
 description: Um painel executivo luminoso para operar estabelecimentos com clareza, confiança e ritmo.
 colors:
   rail-deep: "#24135d"
@@ -100,7 +100,7 @@ components:
     padding: "5px 9px"
 ---
 
-# Design System: Rei Plataforma — Painel CEO
+# Design System: ControlaÊ — Painel CEO
 
 ## Overview
 
@@ -131,7 +131,7 @@ A paleta contrapõe violetas reais e profundos a uma base fria, luminosa e quase
 
 ### Secondary
 
-- **Laranja da Coroa:** identifica a Rei Plataforma em marcas e avatares de estabelecimento; sua raridade preserva sua força.
+- **Laranja da Coroa:** identifica o ControlaÊ em marcas e avatares de estabelecimento; sua raridade preserva sua força.
 
 ### Tertiary
 
@@ -249,7 +249,7 @@ A grade de ações usa botões compactos, igualmente distribuídos e com ícone 
 
 ### Do:
 
-- **Do** mantenha o rail violeta e a coroa laranja como âncoras reconhecíveis da Rei Plataforma.
+- **Do** mantenha o rail violeta e a coroa laranja como âncoras reconhecíveis do ControlaÊ.
 - **Do** agrupe ações por estabelecimento e preserve separadores claros entre identidade, cobrança e operação.
 - **Do** use superfícies translúcidas sobre o canvas lilás somente quando texto e bordas mantiverem contraste.
 - **Do** apresente estados críticos com texto, cor e, quando útil, ícone.

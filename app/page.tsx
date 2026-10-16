@@ -378,7 +378,7 @@ export default function DashboardPage() {
         <div className="sidebar-brand">
           <span className="brand-mark"><Crown size={25} strokeWidth={2.1} /></span>
           <div>
-            <p className="brand-name">Rei Plataforma</p>
+            <p className="brand-name">ControlaÊ</p>
             <p className="brand-caption">Painel CEO</p>
           </div>
         </div>
@@ -398,7 +398,7 @@ export default function DashboardPage() {
 
         <div className="sidebar-footer">
           <span className="sidebar-footer-icon"><Crown size={18} /></span>
-          <div><strong>Rei Plataforma</strong><small>v1.0.0</small></div>
+          <div><strong>ControlaÊ</strong><small>v1.0.0</small></div>
         </div>
       </aside>
 
