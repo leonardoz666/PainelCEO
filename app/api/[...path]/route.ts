@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { BackendConfigurationError, configuredBackendUrl, fetchBackend } from '../../lib/backend-connection'
+import { BackendConfigurationError, backendTimeoutFor, configuredBackendUrl, fetchBackend } from '../../lib/backend-connection'
 
 const HOP_BY_HOP = ['connection', 'content-length', 'host', 'transfer-encoding']
 
@@ -19,7 +19,7 @@ async function handler(request: NextRequest, context: { params: Promise<{ path: 
       body: method === 'GET' || method === 'HEAD' ? undefined : await request.arrayBuffer(),
       redirect: 'manual',
       cache: 'no-store',
-    })
+    }, backendTimeoutFor(path.join('/'), method))
     const responseHeaders = new Headers(response.headers)
     responseHeaders.delete('content-length')
     responseHeaders.delete('content-encoding')
@@ -42,3 +42,4 @@ export const POST = handler
 export const PUT = handler
 export const PATCH = handler
 export const DELETE = handler
+export const maxDuration = 120

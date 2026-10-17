@@ -25,12 +25,30 @@ export function configuredBackendTimeout(rawValue = process.env.BACKEND_PROXY_TI
   return Number.isFinite(parsed) && parsed >= 1000 ? parsed : 10_000
 }
 
-export async function fetchBackend(input: string | URL, init: RequestInit = {}): Promise<Response> {
+export function configuredProvisioningTimeout(rawValue = process.env.BACKEND_PROVISION_TIMEOUT_MS): number {
+  const parsed = Number(rawValue)
+  return Number.isFinite(parsed) && parsed >= 10_000 ? parsed : 120_000
+}
+
+export function backendTimeoutFor(pathname: string, method: string): number {
+  const normalizedPath = pathname.replace(/^\/+|\/+$/g, '')
+  if (method.toUpperCase() === 'POST'
+    && /^ceo\/estabelecimentos\/[^/]+\/provisionar$/.test(normalizedPath)) {
+    return configuredProvisioningTimeout()
+  }
+  return configuredBackendTimeout()
+}
+
+export async function fetchBackend(
+  input: string | URL,
+  init: RequestInit = {},
+  timeoutMs = configuredBackendTimeout(),
+): Promise<Response> {
   const controller = new AbortController()
   const forwardAbort = () => controller.abort()
   if (init.signal?.aborted) forwardAbort()
   else init.signal?.addEventListener('abort', forwardAbort, { once: true })
-  const timeout = setTimeout(() => controller.abort(), configuredBackendTimeout())
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
 
   try {
     return await fetch(input, { ...init, signal: controller.signal })
