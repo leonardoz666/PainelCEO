@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Building2,
+  Blocks,
   Check,
   ChevronDown,
   CircleDollarSign,
@@ -36,6 +37,7 @@ import {
 } from "@/app/lib/operational-url";
 import { AuditHistory } from "@/app/components/AuditHistory";
 import { BrandingEditor } from "@/app/components/BrandingEditor";
+import { ModuleManager } from "@/app/components/ModuleManager";
 
 type Status = "TESTE" | "ATIVO" | "INADIMPLENTE" | "SUSPENSO" | "CANCELADO";
 type Summary = {
@@ -60,6 +62,7 @@ type Establishment = {
   bancoPronto: boolean;
   donoPronto: boolean;
   impressaoConfigurada: boolean;
+  modulosAtivos: string[];
   criadoEm: string;
   assinatura: {
     valorMensal: number;
@@ -133,6 +136,7 @@ export default function DashboardPage() {
   const [billingFor, setBillingFor] = useState<Establishment | null>(null);
   const [editingFor, setEditingFor] = useState<Establishment | null>(null);
   const [brandingFor, setBrandingFor] = useState<Establishment | null>(null);
+  const [modulesFor, setModulesFor] = useState<Establishment | null>(null);
   const [printerToken, setPrinterToken] = useState<{ id: string; value: string } | null>(null);
   const [installationCode, setInstallationCode] = useState<{ id: string; value: string; establishmentUrl: string } | null>(null);
   const [deleteFor, setDeleteFor] = useState<Establishment | null>(null);
@@ -401,6 +405,7 @@ export default function DashboardPage() {
   function openDeleteDialog(item: Establishment) {
     setEditingFor(null);
     setBrandingFor(null);
+    setModulesFor(null);
     setBillingFor(null);
     setOwnerFor(null);
     setDeleteConfirmation("");
@@ -597,17 +602,20 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="client-actions">
-                      <button onClick={() => { setEditingFor((current) => current?.id === item.id ? null : item); setBillingFor(null); setOwnerFor(null); }}>
+                      <button onClick={() => { setEditingFor((current) => current?.id === item.id ? null : item); setBrandingFor(null); setModulesFor(null); setBillingFor(null); setOwnerFor(null); }}>
                         <Pencil size={20} /><span>Editar</span>
                       </button>
-                      <button onClick={() => { setBrandingFor((current) => current?.id === item.id ? null : item); setEditingFor(null); setBillingFor(null); setOwnerFor(null); }}>
+                      <button onClick={() => { setBrandingFor((current) => current?.id === item.id ? null : item); setModulesFor(null); setEditingFor(null); setBillingFor(null); setOwnerFor(null); }}>
                         <Palette size={20} /><span>Personalizar</span>
+                      </button>
+                      <button onClick={() => { setModulesFor((current) => current?.id === item.id ? null : item); setBrandingFor(null); setEditingFor(null); setBillingFor(null); setOwnerFor(null); }}>
+                        <Blocks size={20} /><span>Módulos</span>
                       </button>
                       <button onClick={() => void provisionDatabase(item)} disabled={provisioning === item.id} title="Aplicar atualizações no banco">
                         {provisioning === item.id ? <LoaderCircle size={20} className="animate-spin" /> : <Database size={20} />}
                         <span>{item.bancoPronto ? "Atualizar banco" : "Preparar banco"}</span>
                       </button>
-                      <button onClick={() => setBillingFor((current) => current?.id === item.id ? null : item)}>
+                      <button onClick={() => { setBillingFor((current) => current?.id === item.id ? null : item); setModulesFor(null); }}>
                         <CircleDollarSign size={20} /><span>Mensalidade</span>
                       </button>
                       <button onClick={() => void generatePrinterToken(item)}>
@@ -616,7 +624,7 @@ export default function DashboardPage() {
                       <button onClick={() => void generateInstallationCode(item)} title={establishmentInstallationUrl(operationalBase, item.slug)}>
                         <MonitorCheck size={20} /><span>Ativar aplicativo</span>
                       </button>
-                      <button className="access-button" onClick={() => { setOwnerFor((current) => current?.id === item.id ? null : item); setOwnerMode("create"); }}>
+                      <button className="access-button" onClick={() => { setOwnerFor((current) => current?.id === item.id ? null : item); setModulesFor(null); setOwnerMode("create"); }}>
                         <KeyRound size={19} /><span>Acesso</span><ArrowRight size={16} aria-hidden />
                       </button>
                     </div>
@@ -659,6 +667,18 @@ export default function DashboardPage() {
                         establishment={item}
                         onClose={() => setBrandingFor(null)}
                         onSaved={() => setAnnouncement(`Identidade visual de ${item.nome} atualizada.`)}
+                      />
+                    )}
+
+                    {modulesFor?.id === item.id && (
+                      <ModuleManager
+                        establishment={modulesFor}
+                        onClose={() => setModulesFor(null)}
+                        onSaved={(modulosAtivos) => {
+                          setItems(current => current.map(existing => existing.id === item.id ? { ...existing, modulosAtivos } : existing));
+                          setModulesFor(current => current?.id === item.id ? { ...current, modulosAtivos } : current);
+                          setAnnouncement(`Módulos de ${item.nome} atualizados.`);
+                        }}
                       />
                     )}
 
